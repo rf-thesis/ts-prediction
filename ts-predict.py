@@ -2,8 +2,8 @@
 # original code from https://machinelearningmastery.com/autoregression-models-time-series-forecasting-python/
 #
 
-data = 'small15_allhits_timestamp_1h.csv'
-slices_to_predict = 24
+data = '2015_1h.csv'
+slices_to_predict = 72
 
 import matplotlib
 from pandas import Series
