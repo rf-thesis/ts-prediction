@@ -2,7 +2,7 @@
 # original code from https://machinelearningmastery.com/autoregression-models-time-series-forecasting-python/
 #
 
-data = '2015_1h.csv'
+data = 'slices_2017_1H.csv'
 slices_to_predict = 72
 
 import matplotlib
