@@ -2,17 +2,18 @@
 # original code from https://machinelearningmastery.com/autoregression-models-time-series-forecasting-python/
 #
 
-data = 'slices_2017_1H.csv'
-slices_to_predict = 72
+data = 'data/raw15_SLICE15M_13.csv'
+slices_to_predict = 100
 
 import matplotlib
-from pandas import Series
+import pandas as pd
 from matplotlib import pyplot
-series = Series.from_csv(data, header=0)
+series = pd.Series.from_csv(data, header=0)
+
 print(series.head())
 
 # set color
-matplotlib.rcParams['axes.color_cycle'] = ['orange', 'red', 'grey']
+matplotlib.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
 
 # show data
 series.plot(color="orange")
@@ -21,8 +22,7 @@ pyplot.show()
 # check for correlation
 from pandas import Series
 from matplotlib import pyplot
-from pandas.tools.plotting import lag_plot
-series = Series.from_csv(data, header=0)
+from pandas.plotting import lag_plot
 lag_plot(series)
 pyplot.show()
 
@@ -31,7 +31,6 @@ pyplot.show()
 from pandas import Series
 from pandas import DataFrame
 from pandas import concat
-series = Series.from_csv(data, header=0)
 values = DataFrame(series.values)
 dataframe = concat([values.shift(1), values], axis=1)
 dataframe.columns = ['t-1', 't+1']
@@ -42,7 +41,6 @@ print(result)
 from pandas import Series
 from matplotlib import pyplot
 from pandas.tools.plotting import autocorrelation_plot
-series = Series.from_csv(data, header=0)
 autocorrelation_plot(series)
 pyplot.show()
 
@@ -50,7 +48,6 @@ pyplot.show()
 from pandas import Series
 from matplotlib import pyplot
 from statsmodels.graphics.tsaplots import plot_acf
-series = Series.from_csv(data, header=0)
 plot_acf(series, lags=31)
 pyplot.show()
 
@@ -60,7 +57,6 @@ from pandas import DataFrame
 from pandas import concat
 from matplotlib import pyplot
 from sklearn.metrics import mean_squared_error
-series = Series.from_csv(data, header=0)
 # create lagged dataset
 values = DataFrame(series.values)
 dataframe = concat([values.shift(1), values], axis=1)
@@ -90,7 +86,6 @@ from pandas import Series
 from matplotlib import pyplot
 from statsmodels.tsa.ar_model import AR
 from sklearn.metrics import mean_squared_error
-series = Series.from_csv(data, header=0)
 # split dataset
 X = series.values
 train, test = X[1:len(X) - slices_to_predict], X[len(X) - slices_to_predict:]
