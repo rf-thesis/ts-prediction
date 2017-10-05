@@ -9,7 +9,7 @@ matplotlib.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
 periods_to_predict = 10
 
 # dataset
-df = pd.read_csv('data/raw15_SLICE15M_13.csv')
+df = pd.read_csv('data/raw15_SLICE15M_None.csv')
 
 # prep for Prophet
 df.columns = ['ds', 'y']
