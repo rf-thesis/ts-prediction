@@ -1,7 +1,7 @@
 import pandas as pd
 
 # define data
-polygon = 38
+polygon = 16
 nrows = None
 skiprows = None
 slice_col = 'SLICE15M'   # SLICE1H or 60m-slice
@@ -36,7 +36,6 @@ df_join.reset_index(level=0, inplace=True)
 df_join.columns = ['SLICE', 'TIMESTAMP', 'COUNT']
 df_join.drop('SLICE', axis=1, inplace=True)
 
-print("f")
 # remove outliers by cutting of upper/lower quantiles
 # remove quantiles
 def remOutliers(quantile, df):
