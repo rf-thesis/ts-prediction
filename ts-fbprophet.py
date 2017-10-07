@@ -1,7 +1,7 @@
 import matplotlib
 from fbprophet import Prophet
 import pandas as pd
-from matplotlib.pyplot import show, savefig, errorbar, plot, clf, xlabel, ylabel, title, close
+import matplotlib as plt
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 matplotlib.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
@@ -14,9 +14,10 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 
 # setup data
 slices_per_hour = 4         # 15m = 4, 30m = 2, 60m = 1
-nrows = 350
+nrows = 100
 skiprows = range(1, 150)
-datasets = ['raw15_SLICE15M_13.csv', 'raw15_SLICE15M_10.csv', 'raw15_SLICE15M_3.csv']
+datasets = ['raw15_SLICE15M_13.csv']
+#datasets = ['raw15_SLICE15M_13.csv', 'raw15_SLICE15M_10.csv', 'raw15_SLICE15M_3.csv']
 basepath = 'data/'
 results = []
 
@@ -40,9 +41,9 @@ def forecast(data, filename):
     print('forecast made.')
     # plot
     model.plot(forecast)
-    savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
-    close()
-    clf()
+    plt.savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
+    plt.close()
+    plt.clf()
     print('plot created.')
     return model
 
@@ -75,13 +76,16 @@ def evaluate_cv(df_cv, filename):
         print(score)
 
         # plot
+        df_cv = df_cv.set_index('ds')   # set timestamp as index
+        df_cv = df_cv.cumsum()
+        plt.figure
         df_cv.plot()
-        xlabel('timestamp')
-        ylabel('attendees')
-        title(str(hr_range))
-        savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
-        close()
-        clf()
+        plt.xlabel('timestamp')
+        plt.ylabel('attendees')
+        plt.title('hours considered: ' + str(hr_range))
+        plt.savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
+        plt.close()
+        plt.clf()
     return results
 
 # parallelise calculations
