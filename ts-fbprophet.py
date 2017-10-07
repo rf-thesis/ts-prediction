@@ -1,4 +1,3 @@
-import datetime
 
 import dateutil
 from fbprophet import Prophet
@@ -17,10 +16,10 @@ hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for R
 
 # setup data
 slices_per_hour = 4         # 15m = 4, 30m = 2, 60m = 1
-startdate = dateutil.parser.parse('2015-06-29 00:00:00')
-enddate = dateutil.parser.parse('2015-07-05 00:00:00')
+startdate = dateutil.parser.parse('2015-06-28 00:00:00') # goes from 26-06 to 05-07
+enddate = dateutil.parser.parse('2015-07-03 00:00:00')
 nrows = None
-skiprows = range(1, 150)
+skiprows = None
 datasets = ['raw15_SLICE15M_13.csv', 'raw15_SLICE15M_10.csv', 'raw15_SLICE15M_3.csv']
 basepath = 'data/'
 results = []
@@ -46,7 +45,7 @@ def forecast(data, filename):
     print('forecast made.')
     # plot
     model.plot(forecast)
-    plt.figure.savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
+    plt.savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
     plt.close()
     plt.clf()
     print('plot created.')
@@ -88,7 +87,7 @@ def evaluate_cv(df_cv, filename):
         plt.xlabel('timestamp')
         plt.ylabel('attendees')
         plt.title('hours considered: ' + str(hr_range))
-        plt.figure.savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
+        plt.savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
         plt.close()
         plt.clf()
     return results
