@@ -18,7 +18,7 @@ basepath = 'data/'
 results = []
 
 # create forecast model and plot, save plot under /img
-def forecast(data):
+def forecast(data, filename):
     # dataset
     df = pd.read_csv(data, nrows=nrows, skiprows=skiprows)
     # prep for Prophet
@@ -34,7 +34,7 @@ def forecast(data):
     print('forecast made.')
     # plot
     model.plot(forecast)
-    savefig('img/' + 'fc_' + file + '.png', bbox_inches='tight')
+    savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
     close()
     clf()
     print('plot created.')
@@ -62,7 +62,7 @@ def evaluate_cv(df_cv, filename):
         MSE = mean_squared_error(df_cv.y, df_cv.yhat)
         R2 = r2_score(df_cv.y, df_cv.yhat)
         MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
-        score = ('(%s) at %d hours - MSE: %.2f, R^2: %.2f, MAPE: %.2f pct' % (file, hr_range, MSE, R2, MAPE))
+        score = ('(%s) at %d hours - MSE: %.2f, R^2: %.2f, MAPE: %.2f pct' % (filename, hr_range, MSE, R2, MAPE))
         # todo: uncertainty intervals/error bars?
         results.append(score)
         print(score)
@@ -81,18 +81,18 @@ def evaluate_cv(df_cv, filename):
 from joblib import Parallel, delayed
 import multiprocessing
 
-def processInput(file):
-    data = basepath + file
-    model = forecast(data, file)
-    crossvalidate(model, file)
+def processInput(filename):
+    data = basepath + filename
+    model = forecast(data, filename)
+    crossvalidate(model, filename)
     return results
 
 def parallelise():
     num_cores = multiprocessing.cpu_count()
     results.append(
         Parallel(n_jobs=num_cores)
-        (delayed(processInput)(file)
-         for file in datasets))
+        (delayed(processInput)(filename)
+         for filename in datasets))
 
 if __name__ == "__main__":
     parallelise()
