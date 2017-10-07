@@ -19,7 +19,7 @@ hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for R
 slices_per_hour = 4         # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2015-06-29 00:00:00')
 enddate = dateutil.parser.parse('2015-07-05 00:00:00')
-nrows = 100
+nrows = None
 skiprows = range(1, 150)
 datasets = ['raw15_SLICE15M_13.csv', 'raw15_SLICE15M_10.csv', 'raw15_SLICE15M_3.csv']
 basepath = 'data/'
@@ -29,11 +29,12 @@ results = []
 # create forecast model and plot, save plot under /img
 def forecast(data, filename):
     # dataset
-    df = pd.read_csv(data, nrows=nrows, skiprows=skiprows, parse_dates=['TIMESTAMP'])
+    df = pd.read_csv(data, nrows=nrows, skiprows=skiprows)
     # prep cols for Prophet
     df.columns = ['ds', 'y']
     # set date range
-    df = df[(df.ds >= startdate & df.ds <= enddate)]
+    df.ds = pd.to_datetime(df.ds, infer_datetime_format=True)
+    df = df[(df.ds >= startdate) & (df.ds <= enddate)]
     # predict
     model = Prophet()
     model.fit(df)
@@ -45,7 +46,7 @@ def forecast(data, filename):
     print('forecast made.')
     # plot
     model.plot(forecast)
-    plt.savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
+    plt.figure.savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
     plt.close()
     plt.clf()
     print('plot created.')
@@ -87,7 +88,7 @@ def evaluate_cv(df_cv, filename):
         plt.xlabel('timestamp')
         plt.ylabel('attendees')
         plt.title('hours considered: ' + str(hr_range))
-        plt.savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
+        plt.figure.savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
         plt.close()
         plt.clf()
     return results
