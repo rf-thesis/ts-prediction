@@ -1,5 +1,6 @@
 
 import dateutil
+import numpy
 from fbprophet import Prophet
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,22 +16,17 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-slices_per_hour = 4         # 15m = 4, 30m = 2, 60m = 1
-startdate = dateutil.parser.parse('2017-06-23 12:00:00') # goes from 26-06 to 05-07
-enddate = dateutil.parser.parse('2017-07-02 12:00:00')
-nrows = None
-skiprows = None
-datasets = 'count_devices15m_2017.csv'
+slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
+startdate = dateutil.parser.parse('2017-06-23 12:00:00')    # goes from 26-06 to 05-07
+enddate = dateutil.parser.parse('2017-06-24 12:00:00')
+filename_data = 'count_devices15m_2017.csv'
+filename_pols = 'count_devices15m_2017_polygonlist.csv'
 basepath = 'data/'
-results = []
-
 
 # create forecast model and plot, save plot under /img
-def forecast(data, filename):
-    # dataset
-    df_orig = pd.read_csv(data, nrows=nrows, skiprows=skiprows)
+def forecast(df_orig, polygon):
     # prep cols for Prophet
-    df_orig = df_orig[df_orig.polygon_id == 3]   # todo: remove
+    df_orig = df_orig[df_orig.polygon_id == int(polygon)]
     df_trimmed = df_orig.drop(['polygon_id'], axis=1)
     df_trimmed.columns = ['y', 'ds']
     # set date range
@@ -47,7 +43,7 @@ def forecast(data, filename):
     print('forecast made.')
     # plot
     model.plot(forecast)
-    plt.savefig('img/' + 'fc_' + filename + '.png', bbox_inches='tight')
+    plt.savefig('img/' + 'fc_' + filename_data + '.png', bbox_inches='tight')
     plt.close()
     plt.clf()
     print('plot created.')
@@ -97,20 +93,24 @@ def evaluate_cv(df_cv, filename):
 from joblib import Parallel, delayed
 import multiprocessing
 
-def processInput(filename):
-    data = basepath + filename
-    model = forecast(data, filename)
-    crossvalidate(model, filename)
+results = []
+
+def runOneProcess(df_orig, polygon):
+    model = forecast(df_orig, polygon)
+    crossvalidate(model)
     return results
 
-def parallelise():
+def parallelise(df_orig, df_polygons):
     num_cores = multiprocessing.cpu_count()
     results.append(
         Parallel(n_jobs=num_cores)
-        (delayed(processInput)(filename)
-         for filename in datasets))
+        (delayed(runOneProcess)(df_orig, polygon)
+         for polygon in df_polygons))
 
 if __name__ == "__main__":
-    processInput(datasets)
-    #parallelise()
+    # load data
+    df_orig = pd.read_csv(basepath + filename_data)
+    df_polygons = pd.read_csv(basepath + filename_pols)
+    # parallelise processing
+    parallelise(df_orig, df_polygons)
     print(results)
