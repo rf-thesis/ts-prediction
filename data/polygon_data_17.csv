@@ -1,0 +1,68 @@
+ogr_fid,AreaSqKm,name,type,level
+1,9.10712447812168e-004,Orange - Stage (Pit C),stage,6
+2,3.86034107631832e-003,Buss/Taxi,?,4
+3,1.01037666210233e-002,Arena - Stage,stage,5
+4,1.8978875020451e-002,Camping Q (GAT Central),camping,4
+5,0.132960346017674,Camping C,camping,4
+6,0.348469711049438,Roskilde Festival (Inner area),main,3
+7,0.144224087504848,Camping M (GAT East)/Restricted Camping (Soveby),camping,4
+8,7.5066029036249e-002,Parking West,parking,4
+9,1.05331862157016e-002,Artist Village,food,4
+10,3.76429654774027e-002,Street City,food,4
+11,4.58092728722393e-002,Trade Zone,food,4
+14,6.23313149878344e-003,Restricted Parking (P1),parking,4
+15,3.01824695303517e-002,Restricted Camping (Berendsen),camping,4
+16,2.55561537979672e-003,Bridge (East/West),bridge,5
+17,5.44685398636994e-002,Camping H (Dream City),camping,4
+18,3.576735139401e-003,Rising - Stage,stage,5
+19,3.78822464398029e-002,Pavillion - Area,stage,4
+20,3.18675167786206e-002,Camping B/HC,camping,4
+21,2.73454394735687e-002,Art Zone,fun,4
+22,2.4363758640673e-002,Depot 3,depot,4
+23,4.37339243112276e-003,Gloria - Area,stage,4
+24,1.31017873531638e-003,19 - Entrance,entrance,5
+25,4.85101418834173e-002,Camping E,camping,4
+26,5.36399183858605e-002,Avalon - Area,stage,4
+27,3.16390764255249e-003,Orange - Stage (Pit),stage,6
+28,6.30601445955076e-003,Countdown - Stage,stage,5
+29,7.24822723390404e-003,Apollo - Stage,stage,5
+30,5.68558168248657e-004,Arena - Pit,stage,6
+31,3.36947434511849e-002,Bycenter Vest,food,4
+32,3.07869365125574e-002,Venteomraade Vest,vente,5
+33,1.04980785134993e-003,8 - Entrance,entrance,5
+34,9.28394733987407e-004,Orange - Stage (Pit D),stage,6
+35,4.81940499412752e-004,Orange - Stage (Pit B),stage,6
+36,4.94685160475768e-003,Skate - Stage,stage,5
+37,2.83344517633083e-003,Handels Øen,food,4
+38,0.180969992304953,Camping X/Y/Z (Restricted Camping - Darup Idraetscenter),camping,4
+39,1.13262107806538e-003,Pavillion - Stage,stage,5
+40,1.52048492511867e-003,"Train ""station""",?,4
+41,4.39893700577994e-002,Volunteer Villages,camping,4
+42,3.42003384564563e-003,Avalon - Stage,stage,5
+43,6.50818156604982e-002,Bycenter oest,food,4
+44,7.95515068395665e-002,Parking West/Drop off,parking,4
+45,3.11203652636661e-002,Railway,rail,4
+46,4.73281824161071e-004,Orange - Stage (Pit A),stage,6
+47,4.46814586692708e-002,Depot Vor Frue,depot,4
+48,3.95751379053885e-002,Parking East/Drop off,parking,4
+49,6.01694595450251e-002,Orange - Area,stage,4
+50,0.198160893961214,Camping L/N,camping,4
+51,1.16343347349573e-002,Øst- Stage,stage,5
+52,3.18863723345545e-002,Venteomraade Syd,vente,5
+53,0.380557025064095,Camping G/J/ K,camping,4
+54,7.31432477969249e-002,Handelsskolen,camping,4
+56,0.191817041952176,Camping P,camping,4
+57,0.150568730408769,Restricted Camping (Vilvorde),camping,4
+58,3.11909526981746e-002,Backstage Village,fun,4
+59,6.80478188901089e-002,Parking East,parking,4
+60,0.185734586407225,Caravan East/MC/Sleep-in busses,camping,4
+61,2.08188519542448e-002,Darupvej and Parking,parking,4
+62,9.82697485125298e-004,5 - Entrance,entrance,5
+63,9.68222376259573e-002,Camping F,camping,4
+64,3.83887855944936e-002,Arena - Area,stage,4
+65,3.80962484378858e-002,Venteomraade oest,vente,4
+66,3.23200577369061e-002,Restricted Parking (P2),parking,4
+67,7.52737775867013e-002,Apollo/Countdown - Area,stage,4
+68,3.06956129642449e-002,Orange - Stage,stage,5
+69,1.46906953982847e-002,Grafitti Zone,fun,4
+70,1.10183428308989e-003,11 - Entrance,entrance,5

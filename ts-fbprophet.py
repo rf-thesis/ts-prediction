@@ -16,11 +16,11 @@ hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for R
 
 # setup data
 slices_per_hour = 4         # 15m = 4, 30m = 2, 60m = 1
-startdate = dateutil.parser.parse('2015-06-28 00:00:00') # goes from 26-06 to 05-07
-enddate = dateutil.parser.parse('2015-07-03 00:00:00')
+startdate = dateutil.parser.parse('2017-06-23 12:00:00') # goes from 26-06 to 05-07
+enddate = dateutil.parser.parse('2017-07-02 12:00:00')
 nrows = None
 skiprows = None
-datasets = ['raw15_SLICE15M_13.csv', 'raw15_SLICE15M_10.csv', 'raw15_SLICE15M_3.csv']
+datasets = 'count_devices15m_2017.csv'
 basepath = 'data/'
 results = []
 
@@ -28,15 +28,17 @@ results = []
 # create forecast model and plot, save plot under /img
 def forecast(data, filename):
     # dataset
-    df = pd.read_csv(data, nrows=nrows, skiprows=skiprows)
+    df_orig = pd.read_csv(data, nrows=nrows, skiprows=skiprows)
     # prep cols for Prophet
-    df.columns = ['ds', 'y']
+    df_orig = df_orig[df_orig.polygon_id == 3]   # todo: remove
+    df_trimmed = df_orig.drop(['polygon_id'], axis=1)
+    df_trimmed.columns = ['y', 'ds']
     # set date range
-    df.ds = pd.to_datetime(df.ds, infer_datetime_format=True)
-    df = df[(df.ds >= startdate) & (df.ds <= enddate)]
+    df_trimmed.ds = pd.to_datetime(df_trimmed.ds, infer_datetime_format=True)
+    df_trimmed = df_trimmed[(df_trimmed.ds >= startdate) & (df_trimmed.ds <= enddate)]
     # predict
     model = Prophet()
-    model.fit(df)
+    model.fit(df_trimmed)
     print('model fitted.')
     future = model.make_future_dataframe(periods=fc_hours_to_predict * 4, freq='H')
     future.tail()
@@ -81,7 +83,6 @@ def evaluate_cv(df_cv, filename):
 
         # plot
         df_plot = df_cv.set_index('ds')   # set timestamp as index
-        df_plot = df_plot.cumsum()
         plt.figure
         df_plot.plot()
         plt.xlabel('timestamp')
@@ -110,5 +111,6 @@ def parallelise():
          for filename in datasets))
 
 if __name__ == "__main__":
-    parallelise()
+    processInput(datasets)
+    #parallelise()
     print(results)
