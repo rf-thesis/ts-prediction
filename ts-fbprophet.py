@@ -11,17 +11,19 @@ plt.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
 # setup forecast
 fc_hours_to_predict = 2 # how far forecast looks into future
 # setup cv
-cv_horizon_amount = 24       # how far cv looks into future
+cv_horizon_amount = 10       # how far cv looks into future
 cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
+plotforecasts, plotcrossvals = False, False
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-23 12:00:00')    # goes from 26-06 to 05-07
-enddate = dateutil.parser.parse('2017-06-24 12:00:00')
-filename_data = 'count_devices15m_2017.csv'
-filename_pols = 'count_devices15m_2017_polygonlist.csv'
+enddate =   dateutil.parser.parse('2017-06-26 12:00:00')
+filename_data = '2017_devicecount15m.csv'
+filename_pols = '2017_devicecount15m-polygons.csv'
 basepath = 'data/'
+results = []
 
 # create forecast model and plot, save plot under /img
 def forecast(df_orig, polygon):
@@ -42,11 +44,12 @@ def forecast(df_orig, polygon):
     forecast = model.predict(future)
     print('forecast made.')
     # plot
-    model.plot(forecast)
-    plt.savefig('img/' + 'fc_' + filename_data + '.png', bbox_inches='tight')
-    plt.close()
-    plt.clf()
-    print('plot created.')
+    if plotforecasts:
+        model.plot(forecast)
+        plt.savefig('img/' + 'fc_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
+        plt.close()
+        plt.clf()
+        print('plot created.')
     return model
 
 # calculate MAPE (timeseries evaluation metric)
@@ -55,49 +58,50 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 # cross-validate prediction for model evaluation
-def crossvalidate(model, filename):
+def crossvalidate(model, polygon):
     from fbprophet.diagnostics import cross_validation
     cv_horizon = str(cv_horizon_amount) + ' ' + cv_horizon_unit
-    df_cv = cross_validation(model, horizon=cv_horizon)  # hour, day, week (singular)
-    evaluate_cv(df_cv, filename)
+    try:
+        df_cv = cross_validation(model, horizon=cv_horizon)  # hour, day, week (singular)
+        evaluate_cv(df_cv, polygon)
+    except ValueError:
+        results.append({'POLYGON': None, 'HOUR': None, 'RSQUARED': None, 'RMSE': None, 'MAPE': None})
+        print('Not enough data for specified horizon. Decrease horizon or change period/initial.')
 
-def evaluate_cv(df_cv, filename):
-    # report scores
+def evaluate_cv(df_cv, polygon):
+    # report scores for each hour range
     for hr_range in hr_range_arr:
         # cut data
         df_cv = df_cv.iloc[0:hr_range*slices_per_hour]
         df_cv = df_cv[['ds', 'y', 'yhat']]
 
         # define metrics & create score
-        MSE = mean_squared_error(df_cv.y, df_cv.yhat)
+        RMSE = mean_squared_error(df_cv.y, df_cv.yhat)
         R2 = r2_score(df_cv.y, df_cv.yhat)
         MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
-        score = ('(%s) at %d hours - MSE: %.2f, R^2: %.2f, MAPE: %.2f pct' % (filename, hr_range, MSE, R2, MAPE))
+        results.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
         # todo: uncertainty intervals/error bars?
-        results.append(score)
-        print(score)
 
         # plot
-        df_plot = df_cv.set_index('ds')   # set timestamp as index
-        plt.figure
-        df_plot.plot()
-        plt.xlabel('timestamp')
-        plt.ylabel('attendees')
-        plt.title('hours considered: ' + str(hr_range))
-        plt.savefig('img/' + 'cv_' + filename + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
-        plt.close()
-        plt.clf()
+        if plotcrossvals:
+            df_plot = df_cv.set_index('ds')   # set timestamp as index
+            plt.figure
+            df_plot.plot()
+            plt.xlabel('timestamp')
+            plt.ylabel('attendees')
+            plt.title('hours considered: ' + str(hr_range))
+            plt.savefig('img/' + 'cv_' + filename_data + '_pol' + str(polygon) + '_' + str(hr_range) + 'h.png', bbox_inches='tight')
+            plt.close()
+            plt.clf()
     return results
 
 # parallelise calculations
 from joblib import Parallel, delayed
 import multiprocessing
 
-results = []
-
 def runOneProcess(df_orig, polygon):
     model = forecast(df_orig, polygon)
-    crossvalidate(model)
+    crossvalidate(model, polygon)
     return results
 
 def parallelise(df_orig, df_polygons):
@@ -110,7 +114,12 @@ def parallelise(df_orig, df_polygons):
 if __name__ == "__main__":
     # load data
     df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols)
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=10)   # todo: remove nrows
+    list_polygons = df_polygons.values.flatten()
     # parallelise processing
-    parallelise(df_orig, df_polygons)
-    print(results)
+    parallelise(df_orig, list_polygons)
+    # output data
+    df_results = pd.DataFrame(results[0][0])    # this list gets nested 2 times (why????) , therefore [0][0]
+    df_results = df_results.set_index('POLYGON')
+    df_results.to_csv('results.csv')
+    print(df_results.head())
