@@ -9,7 +9,7 @@ import numpy as np
 plt.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
 
 # setup forecast
-fc_hours_to_predict = 2 # how far forecast looks into future
+fc_hours_to_predict = 4 # how far forecast looks into future
 # setup cv
 run_cv = True               # run CV yes/no
 cv_horizon_amount = 24       # how far cv looks into future
@@ -17,7 +17,7 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = True, False, False
+plotforecasts, plotcrossvals, plotcvuncertainty = False, True, True
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-28 12:00:00')    # goes from 26-06 to 05-07
 enddate =   dateutil.parser.parse('2017-07-03 12:00:00')
@@ -80,18 +80,22 @@ def evaluate_cv(df_cv, polygon):
     if plotcrossvals:
         plt.figure
         df_plot.plot()
+        plt.fill_between(df_plot.index, df_plot.yhat_lower, df_plot.yhat_upper, facecolor='b', edgecolor='#1B2ACC', antialiased=True, alpha=.1)
         plt.xlabel('timestamp')
         plt.ylabel('attendees')
         plt.title('Cross-Validation of Polygon ' + str(polygon))
         plt.savefig('img/' + 'cv_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
+        plt.show()
         plt.close()
         plt.clf()
     if plotcvuncertainty:
         fig = plt.figure(0)
-        plt.plot(df_plot.index, df_plot.y)
-        plt.plot(df_plot.index, df_plot.yhat)
+        df_plot.yhat.plot()
+        plt.fill_between(df_plot.index, df_plot.yhat_lower, df_plot.yhat_upper, interpolate=False, facecolor='b', edgecolor='#1B2ACC', antialiased=True, alpha=.1)
+        #df_plot.y.plot()
+        #plt.plot(df_plot.index, df_plot.y)
+        #plt.plot(df_plot.index, df_plot.yhat)
         #plt.errorbar(df_plot.index, df_plot.yhat, yerr=[y-df_plot.yhat_upper, y-df_plot.yhat_lower], uplims=True, lolims=True)
-        plt.fill_between(df_plot.index, df_plot.yhat_upper, df_plot.yhat_lower, facecolor='b', alpha=.1)
         plt.legend(['y', 'y_hat', 'uncertainty'])
         plt.xlabel('timestamp')
         plt.ylabel('attendees')
@@ -133,14 +137,14 @@ def parallelise(df_orig, df_polygons):
 if __name__ == "__main__":
     # load data
     df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols, nrows=1)   # TODO:
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=5)   # TODO:
     list_polygons = df_polygons.values.flatten()
     # parallelise processing
-    #runOneProcess(df_orig, 13)
-    parallelise(df_orig, list_polygons) # TODO: change for debug
+    runOneProcess(df_orig, 5)
+    #parallelise(df_orig, list_polygons) # TODO: change for debug
     # output data
     print(results)
     df_results = pd.DataFrame(results[0][0])    # this list gets nested 2 times (why????) , therefore [0][0]
     df_results = df_results.set_index('POLYGON')
     df_results.to_csv('results.csv')
-    print(df_results.head())
+    print(df_results.head(n=7))
