@@ -1,9 +1,12 @@
+from collections import defaultdict
+from itertools import chain
 
 import dateutil
 import numpy
 from fbprophet import Prophet
 import pandas as pd
 import matplotlib.pyplot as plt
+from multiprocessing import Manager
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 plt.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
@@ -17,17 +20,16 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = False, True, True
+plotforecasts, plotcrossvals, plotcvuncertainty = False, False, False
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
-startdate = dateutil.parser.parse('2017-06-28 12:00:00')    # goes from 26-06 to 05-07
-enddate =   dateutil.parser.parse('2017-07-03 12:00:00')
+startdate = dateutil.parser.parse('2017-06-25 12:00:00')    # goes from 26-06 to 05-07
+enddate =   dateutil.parser.parse('2017-06-30 12:00:00')
 filename_data = '2017_devicecount15m.csv'
 filename_pols = '2017_devicecount15m-polygons.csv'
 basepath = 'data/'
-results = []
 
 # create forecast model and plot, save plot under /img
-def forecast(df_orig, polygon):
+def fb_forecast(df_orig, polygon):
     # prep cols for Prophet
     df_orig = df_orig[df_orig.polygon_id == int(polygon)]
     df_trimmed = df_orig.drop(['polygon_id'], axis=1)
@@ -61,17 +63,14 @@ def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 # cross-validate prediction for model evaluation
-def crossvalidate(model, polygon):
+def fb_crossvalidate(model, polygon):
     from fbprophet.diagnostics import cross_validation
     cv_horizon = str(cv_horizon_amount) + ' ' + cv_horizon_unit
-    try:
-        df_cv = cross_validation(model, horizon=cv_horizon)  # hour, day, week (singular)
-        evaluate_cv(df_cv, polygon)
-    except ValueError:
-        results.append({'POLYGON': None, 'HOUR': None, 'RSQUARED': None, 'RMSE': None, 'MAPE': None})
-        print('Not enough data for specified horizon. Decrease horizon or change period/initial.')
+    df_cv = cross_validation(model, horizon=cv_horizon)  # hour, day, week (singular)
+    return df_cv
 
-def evaluate_cv(df_cv, polygon):
+def evaluate_cv_per_hour(df_cv, polygon):
+    list_cvscore_per_hr = []
     # plot
     # set timestamp as index and convert to datetime
     df_plot = df_cv.set_index('ds')
@@ -113,26 +112,25 @@ def evaluate_cv(df_cv, polygon):
         RMSE = mean_squared_error(df_cv.y, df_cv.yhat)
         R2 = r2_score(df_cv.y, df_cv.yhat)
         MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
-        results.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
+        list_cvscore_per_hr.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
 
-    return results
+    return list_cvscore_per_hr
 
 # parallelise calculations
 from joblib import Parallel, delayed
 import multiprocessing
 
-def runOneProcess(df_orig, polygon):
-    model = forecast(df_orig, polygon)
-    if run_cv:
-        if model: crossvalidate(model, polygon)
-        return results
+def run_one_polygon(df_orig, polygon):
+    model = fb_forecast(df_orig, polygon)
+    df_cv = fb_crossvalidate(model, polygon)
+    cvscore_per_hr = evaluate_cv_per_hour(df_cv, polygon)
+    return cvscore_per_hr
 
-def parallelise(df_orig, df_polygons):
+def parallelise(df_orig, list_polygons, allresults):
     num_cores = multiprocessing.cpu_count()
-    results.append(
-        Parallel(n_jobs=num_cores)
-        (delayed(runOneProcess)(df_orig, polygon)
-         for polygon in df_polygons))
+    # update the allresults list
+    # use [0] to flatten array
+    allresults.extend(Parallel(n_jobs=num_cores)(delayed(run_one_polygon)(df_orig, polygon) for polygon in list_polygons))
 
 if __name__ == "__main__":
     # load data
@@ -140,11 +138,14 @@ if __name__ == "__main__":
     df_polygons = pd.read_csv(basepath + filename_pols, nrows=5)   # TODO:
     list_polygons = df_polygons.values.flatten()
     # parallelise processing
-    runOneProcess(df_orig, 5)
-    #parallelise(df_orig, list_polygons) # TODO: change for debug
-    # output data
-    print(results)
-    df_results = pd.DataFrame(results[0][0])    # this list gets nested 2 times (why????) , therefore [0][0]
-    df_results = df_results.set_index('POLYGON')
-    df_results.to_csv('results.csv')
-    print(df_results.head(n=7))
+    allresults = Manager().list([])     # enable memory sharing between processes
+    parallelise(df_orig, list_polygons, allresults)     # TODO: change for debug
+    # output data by creating a df of all dicts
+    df_endresult = pd.DataFrame()
+    for i in range(0, len(allresults)):
+        one_row = pd.DataFrame.from_dict(allresults[i])
+        df_endresult = df_endresult.append(one_row)
+    df_endresult = df_endresult.set_index('POLYGON')
+    df_endresult.to_csv('results.csv')
+    print(df_endresult.tail(n=10))
+    print(len(df_endresult))
