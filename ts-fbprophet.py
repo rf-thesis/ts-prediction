@@ -19,7 +19,7 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = True, True, True
+plotforecasts, plotcrossvals, plotcvuncertainty = False, False, False
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')    # goes from 26-06 to 05-07
 enddate =   dateutil.parser.parse('2017-07-02 12:00:00')
@@ -106,7 +106,7 @@ def evaluate_cv_per_hour(df_cv, polygon):
         # cut data for each hour range
         df_cv = df_cv.iloc[0:hr_range*slices_per_hour]
         # define metrics & create score
-        RMSE = mean_squared_error(df_cv.y, df_cv.yhat)
+        RMSE = np.sqrt(mean_squared_error(df_cv.y, df_cv.yhat))
         R2 = r2_score(df_cv.y, df_cv.yhat)
         MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
         list_cvscore_per_hr.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
