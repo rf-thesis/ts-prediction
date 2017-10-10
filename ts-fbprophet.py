@@ -73,8 +73,10 @@ def crossvalidate(model, polygon):
 
 def evaluate_cv(df_cv, polygon):
     # plot
-    # set timestamp as index
+    # set timestamp as index and convert to datetime
     df_plot = df_cv.set_index('ds')
+    df_plot.index = pd.to_datetime(df_plot.index, infer_datetime_format=True)
+    # plot functions
     if plotcrossvals:
         plt.figure
         df_plot.plot()
@@ -131,7 +133,7 @@ def parallelise(df_orig, df_polygons):
 if __name__ == "__main__":
     # load data
     df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)   # TODO:
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=1)   # TODO:
     list_polygons = df_polygons.values.flatten()
     # parallelise processing
     #runOneProcess(df_orig, 13)
