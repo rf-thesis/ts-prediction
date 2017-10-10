@@ -71,20 +71,9 @@ def crossvalidate(model, polygon):
         print('Not enough data for specified horizon. Decrease horizon or change period/initial.')
 
 def evaluate_cv(df_cv, polygon):
-    # report scores for each hour range
-    for hr_range in hr_range_arr:
-        # cut data
-        df_cv = df_cv.iloc[0:hr_range*slices_per_hour]
-
-        # define metrics & create score
-        RMSE = mean_squared_error(df_cv.y, df_cv.yhat)
-        R2 = r2_score(df_cv.y, df_cv.yhat)
-        MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
-        results.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
-        # todo: uncertainty intervals/error bars?
-
     # plot
-    df_plot = df_cv.set_index('ds')   # set timestamp as index
+    # set timestamp as index
+    df_plot = df_cv.set_index('ds')
     if plotcrossvals:
         plt.figure
         df_plot.plot()
@@ -94,13 +83,12 @@ def evaluate_cv(df_cv, polygon):
         plt.savefig('img/' + 'cv_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
         plt.close()
         plt.clf()
-
     if plotcvuncertainty:
         fig = plt.figure(0)
         plt.plot(df_plot.index, df_plot.y)
         plt.plot(df_plot.index, df_plot.yhat)
         #plt.errorbar(df_plot.index, df_plot.yhat, yerr=[y-df_plot.yhat_upper, y-df_plot.yhat_lower], uplims=True, lolims=True)
-        plt.fill_between(df_plot.index, df_plot.yhat_upper, df_plot.yhat_lower, facecolor='b', alpha=.3)
+        plt.fill_between(df_plot.index, df_plot.yhat_upper, df_plot.yhat_lower, facecolor='b', alpha=.1)
         plt.legend(['y', 'y_hat', 'uncertainty'])
         plt.xlabel('timestamp')
         plt.ylabel('attendees')
@@ -109,6 +97,17 @@ def evaluate_cv(df_cv, polygon):
         plt.show()
         plt.close()
         plt.clf()
+
+    # report scores for each hour range
+    for hr_range in hr_range_arr:
+        # cut data for each hour range
+        df_cv = df_cv.iloc[0:hr_range*slices_per_hour]
+        # define metrics & create score
+        RMSE = mean_squared_error(df_cv.y, df_cv.yhat)
+        R2 = r2_score(df_cv.y, df_cv.yhat)
+        MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
+        results.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
+
     return results
 
 # parallelise calculations
