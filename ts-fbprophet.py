@@ -11,15 +11,16 @@ plt.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
 # setup forecast
 fc_hours_to_predict = 2 # how far forecast looks into future
 # setup cv
-cv_horizon_amount = 12       # how far cv looks into future
+run_cv = True               # run CV yes/no
+cv_horizon_amount = 24       # how far cv looks into future
 cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = False, False, True
+plotforecasts, plotcrossvals, plotcvuncertainty = True, False, False
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
-startdate = dateutil.parser.parse('2017-06-26 12:00:00')    # goes from 26-06 to 05-07
-enddate =   dateutil.parser.parse('2017-06-30 12:00:00')
+startdate = dateutil.parser.parse('2017-06-28 12:00:00')    # goes from 26-06 to 05-07
+enddate =   dateutil.parser.parse('2017-07-03 12:00:00')
 filename_data = '2017_devicecount15m.csv'
 filename_pols = '2017_devicecount15m-polygons.csv'
 basepath = 'data/'
@@ -116,8 +117,9 @@ import multiprocessing
 
 def runOneProcess(df_orig, polygon):
     model = forecast(df_orig, polygon)
-    if model: crossvalidate(model, polygon)
-    return results
+    if run_cv:
+        if model: crossvalidate(model, polygon)
+        return results
 
 def parallelise(df_orig, df_polygons):
     num_cores = multiprocessing.cpu_count()
@@ -129,7 +131,7 @@ def parallelise(df_orig, df_polygons):
 if __name__ == "__main__":
     # load data
     df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols, nrows=10)   # TODO:
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)   # TODO:
     list_polygons = df_polygons.values.flatten()
     # parallelise processing
     #runOneProcess(df_orig, 13)
