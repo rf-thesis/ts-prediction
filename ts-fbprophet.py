@@ -132,7 +132,7 @@ def parallelise(df_orig, list_polygons, allresults):
 if __name__ == "__main__":
     # load data
     df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols, nrows=5)   # TODO:
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)   # TODO:
     list_polygons = df_polygons.values.flatten()
     # parallelise processing
     allresults = Manager().list([])     # enable memory sharing between processes
