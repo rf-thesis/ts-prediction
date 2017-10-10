@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 from multiprocessing import Manager
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-plt.rcParams['axes.color_cycle'] = ['orange', 'lightblue', 'grey']
 
 # setup forecast
 fc_hours_to_predict = 4 # how far forecast looks into future
@@ -20,10 +19,10 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = False, False, False
+plotforecasts, plotcrossvals, plotcvuncertainty = True, True, True
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
-startdate = dateutil.parser.parse('2017-06-25 12:00:00')    # goes from 26-06 to 05-07
-enddate =   dateutil.parser.parse('2017-06-30 12:00:00')
+startdate = dateutil.parser.parse('2017-06-27 12:00:00')    # goes from 26-06 to 05-07
+enddate =   dateutil.parser.parse('2017-07-02 12:00:00')
 filename_data = '2017_devicecount15m.csv'
 filename_pols = '2017_devicecount15m-polygons.csv'
 basepath = 'data/'
@@ -84,14 +83,13 @@ def evaluate_cv_per_hour(df_cv, polygon):
         plt.ylabel('attendees')
         plt.title('Cross-Validation of Polygon ' + str(polygon))
         plt.savefig('img/' + 'cv_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
-        plt.show()
         plt.close()
         plt.clf()
     if plotcvuncertainty:
         fig = plt.figure(0)
         df_plot.yhat.plot()
         plt.fill_between(df_plot.index, df_plot.yhat_lower, df_plot.yhat_upper, interpolate=False, facecolor='b', edgecolor='#1B2ACC', antialiased=True, alpha=.1)
-        #df_plot.y.plot()
+        df_plot.y.plot()
         #plt.plot(df_plot.index, df_plot.y)
         #plt.plot(df_plot.index, df_plot.yhat)
         #plt.errorbar(df_plot.index, df_plot.yhat, yerr=[y-df_plot.yhat_upper, y-df_plot.yhat_lower], uplims=True, lolims=True)
@@ -100,7 +98,6 @@ def evaluate_cv_per_hour(df_cv, polygon):
         plt.ylabel('attendees')
         plt.title('Cross-Validation of Polygon ' + str(polygon))
         plt.savefig('img/' + 'cv_uc_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
-        plt.show()
         plt.close()
         plt.clf()
 
@@ -148,4 +145,3 @@ if __name__ == "__main__":
     df_endresult = df_endresult.set_index('POLYGON')
     df_endresult.to_csv('results.csv')
     print(df_endresult.tail(n=10))
-    print(len(df_endresult))
