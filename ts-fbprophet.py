@@ -129,19 +129,29 @@ def parallelise(df_orig, list_polygons, allresults):
     # use [0] to flatten array
     allresults.extend(Parallel(n_jobs=num_cores)(delayed(run_one_polygon)(df_orig, polygon) for polygon in list_polygons))
 
-if __name__ == "__main__":
-    # load data
-    df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)   # TODO:
-    list_polygons = df_polygons.values.flatten()
-    # parallelise processing
-    allresults = Manager().list([])     # enable memory sharing between processes
-    parallelise(df_orig, list_polygons, allresults)     # TODO: change for debug
-    # output data by creating a df of all dicts
+def create_final_df(allresults):
+    # create pandas df from dict
     df_endresult = pd.DataFrame()
     for i in range(0, len(allresults)):
         one_row = pd.DataFrame.from_dict(allresults[i])
         df_endresult = df_endresult.append(one_row)
     df_endresult = df_endresult.set_index('POLYGON')
-    df_endresult.to_csv('results.csv')
-    print(df_endresult.tail(n=10))
+    # join with polygon names list
+    df_pinfo = pd.read_csv('data/2017_polygoninfo_withoutpol1.csv', usecols=['ogr_fid', 'name'])
+    df_pinfo = df_pinfo.set_index('ogr_fid')
+    df_pinfo.index.rename('POLYGON', inplace=True)
+    df_joined = df_endresult.join(df_pinfo, how='outer')
+    return df_joined
+
+if __name__ == "__main__":
+    # load data
+    df_orig = pd.read_csv(basepath + filename_data)
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)
+    list_polygons = df_polygons.values.flatten()
+    # parallelise processing
+    allresults = Manager().list([])     # enable memory sharing between processes
+    parallelise(df_orig, list_polygons, allresults)
+    # create a df of all dicts, join with polygon names
+    df_final = create_final_df(allresults)
+    df_final.to_csv('results.csv')
+    print(df_final.tail(n=10))
