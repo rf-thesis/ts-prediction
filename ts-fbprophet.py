@@ -19,7 +19,7 @@ cv_horizon_unit = 'hour'    # units: sec, minute, hour, day, week, month
 hr_range_arr = [24, 12, 8, 4, 2, 1] # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = False, False, False
+plotforecasts, plotcrossvals, plotcvuncertainty = False, True, True
 slices_per_hour = 4                                         # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')    # goes from 26-06 to 05-07
 enddate =   dateutil.parser.parse('2017-07-02 12:00:00')
@@ -121,6 +121,7 @@ def run_one_polygon(df_orig, polygon):
     model = fb_forecast(df_orig, polygon)
     df_cv = fb_crossvalidate(model, polygon)
     cvscore_per_hr = evaluate_cv_per_hour(df_cv, polygon)
+    df_cv.to_csv('so-data' + str(polygon) + '.csv')
     return cvscore_per_hr
 
 def parallelise(df_orig, list_polygons, allresults):
@@ -141,6 +142,7 @@ def create_final_df(allresults):
     df_pinfo = df_pinfo.set_index('ogr_fid')
     df_pinfo.index.rename('POLYGON', inplace=True)
     df_joined = df_endresult.join(df_pinfo, how='outer')
+    # todo: where HOUR > 0, cast to int
     return df_joined
 
 if __name__ == "__main__":
