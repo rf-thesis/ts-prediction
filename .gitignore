@@ -18,3 +18,5 @@ data/slices_2017.csv
 /data/slices_2015_1H.csv
 /data/small15_38_.csv
 /data/points_full_15.csv
+/ts-oldcode.py
+/test.py
