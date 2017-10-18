@@ -13,6 +13,7 @@ from pandas import DataFrame
 from pandas import concat
 from matplotlib import pyplot
 from statsmodels.tsa.arima_model import ARIMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')  # goes from 26-06 to 05-07
 enddate = dateutil.parser.parse('2017-07-02 12:00:00')
@@ -20,11 +21,12 @@ filename_data = '2017_devicecount15m.csv'
 filename_pols = '2017_devicecount15m-polygons.csv'
 basepath = 'data/'
 
-polygon = 2
-slices_to_predict = 100
+polygon = 38
+hours_to_predict = 24
+slices_to_predict = hours_to_predict * 4
 
 
-def load_data():
+def load_data(polygon):
     # load data
     df_orig = pd.read_csv(basepath + filename_data, squeeze=True)
     # prep cols for Prophet
@@ -35,8 +37,13 @@ def load_data():
     df_trimmed.ds = pd.to_datetime(df_trimmed.ds, infer_datetime_format=True)
     df_trimmed = df_trimmed[(df_trimmed.ds >= startdate) & (df_trimmed.ds <= enddate)]
     df_trimmed = df_trimmed.set_index(df_trimmed.ds)
-    df_trimmed = df_trimmed.drop(['ds'], axis=1)
-    return df_trimmed
+    # transform values to float and create Series
+    series = df_trimmed.drop(['ds'], axis=1)
+    vals = series.values
+    vals = [float(i) for i in vals]
+    idx = series.index
+    series = pd.Series(vals, idx)
+    return series
 
 # calculate MAPE (timeseries evaluation metric)
 def MAPE(y_true, y_pred):
@@ -92,18 +99,20 @@ def persistancemodel():
     pyplot.plot(test_y)
     pyplot.plot(predictions, color='red')
     pyplot.show()
+    pyplot.clf()
 
-def ARIMA():
+
+def calcARIMA_long():
     # AR model
     # split dataset
     X = series.values
     X = [float(i) for i in X]
-    size = int(len(X) * 0.66)
+    size = int(len(X) - slices_to_predict)
     train, test = X[0:size], X[size:len(X)]
     history = [x for x in train]
     predictions = list()
     for t in range(len(test)):
-        model = ARIMA(history, order=(5, 1, 0))
+        model = ARIMA(history, order=(0, 1, 0))
         model_fit = model.fit(disp=0)
         output = model_fit.forecast()
         yhat = output[0]
@@ -117,8 +126,29 @@ def ARIMA():
     pyplot.plot(test)
     pyplot.plot(predictions, color='red')
     pyplot.show()
+    pyplot.clf()
 
-########
+# xxx
+def calcARIMA_slim(series):
+    predict_from = int(len(series) - slices_to_predict)
+    model = SARIMAX(series, order=(2, 1, 2))
+    model_fit = model.fit(disp=0)
+    pred = model_fit.predict(start=predict_from, dynamic=False)
+    ax = series[startdate:].plot(label='observed')
+    error = MAPE(series[predict_from:], pred)
+    print('Test MAPE: %.3f' % error)
+    # name dataframe
+    df_cv = pd.concat([series, pred], axis=1, join='inner')
+    df_cv.index.names = ['ds']
+    df_cv.columns = ['y', 'y_hat']
+    # plot graph
+    pyplot.plot(pred, label='predicted')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Attendees')
+    pyplot.legend()
+    pyplot.show()
+
+# bruteforce find optimal order
 def gridSearchOrder(series):
     # Define the p, d and q parameters to take any value between 0 and 2
     p = d = q = range(0, 2)
@@ -149,5 +179,6 @@ def gridSearchOrder(series):
                 print(ValueError)
                 continue
 
-series = load_data()
-ARIMA()
+# do stuff
+series = load_data(polygon)
+calcARIMA_slim(series)
