@@ -216,7 +216,7 @@ def calc_autoARIMA(series_all):
     best_params = gridSearchOrder(series_all)
     calc_ARIMA(series_all, best_params.param, best_params.param_seasonal)  # “frequency” argument is the number of observations per season
 
-# do stuff
+### do stuff ###
 polygon = 38
 print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
 series_all, series_train, series_test = load_data(polygon)
