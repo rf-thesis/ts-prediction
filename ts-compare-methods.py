@@ -214,9 +214,9 @@ def process(polygon):
 
     # calc Auto.ARIMA
     mape_autoSARIMA = 0
-    # df_autoSARIMA = calc_autoSARIMA(series_all)
-    # mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-    # df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
+    df_autoSARIMA = calc_autoSARIMA(series_all)
+    mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
+    df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
 
 
     # format plot (http://matplotlib.org/users/customizing.html)
@@ -233,7 +233,7 @@ def process(polygon):
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict))
     pyplot.legend()
     pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
-    pyplot.show()
+    #pyplot.show()
     pyplot.close()
     pyplot.clf()
 
