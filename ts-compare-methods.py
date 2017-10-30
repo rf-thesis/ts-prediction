@@ -9,6 +9,8 @@ from statsmodels import tsa
 import dateutil
 import matplotlib
 import pandas as pd
+
+from helpers.getpolygonname import getname
 import numpy as np
 from statsmodels.graphics.tsaplots import plot_acf
 # from pandas.plotting import lag_plot, autocorrelation_plot
@@ -212,35 +214,47 @@ def calc_fbprophet(series):
 def process(polygon):
     print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
     series_all, series_train, series_test, df_all = load_data(polygon)
+
     # calculate all models
     # calc fbprophet
     df_fbprophet = calc_fbprophet(df_all)
-    mape_fbprophet = MAPE(df_fbprophet.y, df_fbprophet.yhat)
+    fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
+    mape_fbprophet = MAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
+    # plot observed data
+    df_fbprophet.y.plot(color='grey', alpha=0.7)
+    # plot predicted
+    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
+
     # calc AR model
     df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
     mape_AR = MAPE(df_AR.y, df_AR.yhat)
+    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
+
     # calc Auto.ARIMA
     mape_autoSARIMA = 0
     #df_autoSARIMA = calc_autoSARIMA(series_all)
-    #mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-
-    # plot one large <3 graph
-    # observed data
-    df_fbprophet.y.plot(color='grey', alpha=0.7)
-    # fbprophet
-    fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
-    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
-    # AR
-    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
-    # AutoSARIMA
+    #mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yha
     #df_autoSARIMA.plot(linestyle='--', alpha=0.7, linewidth=2)
-    # format plot
+
+
+    # format plot (http://matplotlib.org/users/customizing.html)
+    # font size
+    SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE = 8, 9, 12
+    pyplot.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+    pyplot.tick_params(axis='both', which='major', labelsize=SMALL_SIZE)
+    pyplot.tick_params(axis='both', which='minor', labelsize=SMALL_SIZE)
+    pyplot.axes.titlesize = SMALL_SIZE
+    pyplot.axes.labelsize = SMALL_SIZE
+    # plot description
+    #pyplot.xlabel('timestamp')
+    #pyplot.ylabel('devices')
+    pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict))
     pyplot.legend(['observed',
                    'fbprophet (MAPE: %.2f)' % mape_fbprophet,
                    'AR (MAPE: %.2f)' % mape_AR,
                    'AutoARIMA (MAPE: %.2f' % mape_autoSARIMA])
-    pyplot.show()
     pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
+    pyplot.show()
     pyplot.close()
     pyplot.clf()
 
@@ -249,10 +263,9 @@ def process(polygon):
 
 # run stuff
 from multiprocessing import Pool
-import os
 
-polygon_list = [6, 38, 14]
+polygon_list = [6, 49, 18, 5, 2, 25]   # Inner Area, Orange, Rising, Camping C, Bus/Taxi, Camping E
 if __name__ == '__main__':
-    #pool = Pool()
-    #pool.map(process, polygon_list)
-    process(6)
+    pool = Pool()
+    pool.map(process, polygon_list)
+    #process(6)
