@@ -231,10 +231,10 @@ def process(polygon):
     df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
 
     # calc Auto.ARIMA
-    mape_autoSARIMA = 0
-    #df_autoSARIMA = calc_autoSARIMA(series_all)
-    #mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yha
-    #df_autoSARIMA.plot(linestyle='--', alpha=0.7, linewidth=2)
+    #mape_autoSARIMA = 0
+    df_autoSARIMA = calc_autoSARIMA(series_all)
+    mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
+    df_autoSARIMA.plot(linestyle='--', alpha=0.7, linewidth=2)
 
 
     # format plot (http://matplotlib.org/users/customizing.html)
