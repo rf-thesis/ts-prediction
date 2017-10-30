@@ -138,8 +138,8 @@ def calc_SARIMA(series_data, order, seasonal_order):
 def gridsearchSARIMA(series):
     print("Finding best ARIMA hyperparameters...")
     # Define the p, d and q parameters to take any value between 0 and 2
-    p = q = range(0, 5)
-    d = range(0, 3)
+    p = q = range(0, 3)
+    d = range(0, 2)
     import itertools
     # Generate all different combinations of p, q and q triplets
     pdq = list(itertools.product(p, d, q))
