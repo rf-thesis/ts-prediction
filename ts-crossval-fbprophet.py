@@ -24,7 +24,7 @@ slices_per_hour = 4  # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')  # goes from 26-06 to 05-07
 enddate = dateutil.parser.parse('2017-07-02 12:00:00')
 filename_data = '2017_devicecount15m.csv'
-filename_pols = '2017_devicecount15m-polygons.csv'
+filename_pols = '2017_dcount15m-polygons.csv'
 basepath = 'data/'
 
 
@@ -45,7 +45,7 @@ def create_model_fbprophet(df_orig, polygon):
     return model
 
 
-def forecast_fbprophet(model):
+def plot_fbprophet(model, polygon):
     future = model.make_future_dataframe(periods=fc_hours_to_predict * 4, freq='H')
     future.tail()
     print('df created.')
@@ -63,18 +63,18 @@ def forecast_fbprophet(model):
     return forecast
 
 
-# calculate MAPE (timeseries evaluation metric)
-def mean_absolute_percentage_error(y_true, y_pred):
-    y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-
-
 # cross-validate prediction for model evaluation
-def fb_crossvalidate(model, polygon):
+def crossval_fbprophet(model, polygon):
     from fbprophet.diagnostics import cross_validation
     cv_horizon = str(cv_horizon_amount) + ' ' + cv_horizon_unit
     df_cv = cross_validation(model, horizon=cv_horizon)  # hour, day, week (singular)
     return df_cv
+
+
+# calculate MAPE (timeseries evaluation metric)
+def mean_absolute_percentage_error(y_true, y_pred):
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 
 def evaluate_cv_per_hour(df_cv, polygon):
@@ -130,11 +130,11 @@ from joblib import Parallel, delayed
 import multiprocessing
 
 
-def run_one_polygon(df_orig, polygon):
+def predict_one_polygon(df_orig, polygon):
     model = create_model_fbprophet(df_orig, polygon)
-    df_cv = fb_crossvalidate(model, polygon)
+    df_cv = crossval_fbprophet(model, polygon)
     cvscore_per_hr = evaluate_cv_per_hour(df_cv, polygon)
-    df_cv.to_csv('so-data' + str(polygon) + '.csv')
+    #df_cv.to_csv('so-data' + str(polygon) + '.csv')
     return cvscore_per_hr
 
 
@@ -143,7 +143,7 @@ def parallelise(df_orig, list_polygons, allresults):
     # update the allresults list
     # use [0] to flatten array
     allresults.extend(
-        Parallel(n_jobs=num_cores)(delayed(run_one_polygon)(df_orig, polygon) for polygon in list_polygons))
+        Parallel(n_jobs=num_cores)(delayed(predict_one_polygon)(df_orig, polygon) for polygon in list_polygons))
 
 
 def create_final_df(allresults):

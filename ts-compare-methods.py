@@ -3,6 +3,7 @@
 #
 from datetime import datetime, timedelta
 
+from fbprophet import Prophet
 from statsmodels import tsa
 
 import dateutil
@@ -10,19 +11,17 @@ import matplotlib
 import pandas as pd
 import numpy as np
 from statsmodels.graphics.tsaplots import plot_acf
-from pandas.plotting import lag_plot, autocorrelation_plot
+# from pandas.plotting import lag_plot, autocorrelation_plot
 from pandas import DataFrame
 from pandas import concat
 from matplotlib import pyplot
 from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
-tolerance = timedelta(minutes=5)
-
-startdate = pd.to_datetime('2017-06-27 04:00:00') - tolerance  # goes from 26-06 to 05-07
-enddate = pd.to_datetime('2017-07-02 04:00:00') + tolerance
-filename_data = '2017_devicecount15m_harmonised.csv'
-filename_pols = '2017_devicecount15m-polygons.csv'
+startdate = pd.to_datetime('2017-06-27 04:00:00')  # goes from 26-06 to 05-07
+enddate = pd.to_datetime('2017-07-02 04:00:00')
+filename_data = '2017_dcount15m_harmonised.csv'
+filename_pols = '2017_dcount15m-polygons.csv'
 basepath = 'data/'
 
 hours_to_predict = 24
@@ -40,20 +39,17 @@ def load_data(polygon):
     df_trimmed.ds = pd.to_datetime(df_trimmed.ds, infer_datetime_format=True)
     df_trimmed = df_trimmed[(df_trimmed.ds >= startdate) & (df_trimmed.ds <= enddate)]
     df_trimmed = df_trimmed.set_index(df_trimmed.ds)
-    # harmonise timestamp to have a regular 15m frequency
-    # df_trimmed.index = pd.date_range(start=startdate, end=enddate, freq='15min')
     # transform values to float and create Series
     series = df_trimmed.drop(['ds'], axis=1)
     vals = series.values
     vals = [float(i) for i in vals]
     idx = series.index
     series_all = pd.Series(vals, idx)
-    # series_all = series_all.asfreq('15min')
     print('Series frequency: %s' % str(series_all.index.freq))
     # split into horizon (test data) and 3*horizon (train data) to make comparable to fbprophet
     split_point = len(series_all) - slices_to_predict
     series_train, series_test = series_all[0:split_point], series_all[split_point:]
-    return series_all, series_train, series_test
+    return series_all, series_train, series_test, df_trimmed
 
 
 # calculate MAPE (timeseries evaluation metric)
@@ -114,54 +110,28 @@ def persistancemodel():
     pyplot.clf()
 
 
-def calcARIMA_long():
-    # AR model
-    # split dataset
-    X = series_all.values
-    X = [float(i) for i in X]
-    size = int(len(X) - slices_to_predict)
-    train, test = X[0:size], X[size:len(X)]
-    history = [x for x in train]
-    predictions = list()
-    for t in range(len(test)):
-        model = ARIMA(history, order=(0, 1, 0))
-        model_fit = model.fit(disp=0)
-        output = model_fit.forecast()
-        yhat = output[0]
-        predictions.append(yhat)
-        obs = test[t]
-        history.append(obs)
-        print('predicted=%f, expected=%f' % (yhat, obs))
-    error = MAPE(test, predictions)
-    print('Test MAPE: %.3f' % error)
-    # plot
-    pyplot.plot(test)
-    pyplot.plot(predictions, color='red')
-    pyplot.show()
-    pyplot.clf()
-
-
-# xxx
-def calc_ARIMA(series_all, order, seasonal_order):
+# calculate (S)AR-I-MA model
+def calc_SARIMA(series_data, order, seasonal_order):
     print("Predicting ARIMA model %s / %s..." % (str(order), str(seasonal_order)))
     # fit model and predict
-    model = SARIMAX(series_all, order=order, seasonal_order=seasonal_order, enforce_stationarity=False,
+    model = SARIMAX(series_data, order=order, seasonal_order=seasonal_order, enforce_stationarity=False,
                     enforce_invertibility=False)
     model_fit = model.fit(disp=0)
-    pred = model_fit.get_prediction(dynamic=True, start=len(series_all) - slices_to_predict)
+    pred = model_fit.get_prediction(dynamic=True, start=len(series_data) - slices_to_predict)
     # calc MAPE
-    y_true = series_all[len(series_all) - slices_to_predict:]
-    y_pred = pred.predicted_mean
+    y = series_data[len(series_data) - slices_to_predict:]
+    yhat = pred.predicted_mean
+    print('MAPE: % .2f' % MAPE(y, yhat))
     # build dataframe
-    df_cv = pd.concat([y_true, y_pred], axis=1, join='inner')
+    df_cv = pd.concat([y, yhat], axis=1, join='inner')
     df_cv.index.names = ['ds']
-    df_cv.columns = ['y', 'y_hat']
+    df_cv.columns = ['y', 'yhat']
     print(df_cv.head(n=10))
-    print('MAPE: % .2f' % MAPE(y_true, y_pred))
-    plot(pred, series_all)
+    # plotSARIMA(pred, series_data)
     return df_cv
 
-def plot(pred, series_all):
+
+def plotSARIMA(pred, series_all):
     # plot graph
     pred_ci = pred.conf_int()
     ax = series_all.plot(label='observed')
@@ -175,7 +145,8 @@ def plot(pred, series_all):
 
 
 # bruteforce find optimal order
-def gridSearchOrder(series):
+# code inspired by https://www.digitalocean.com/community/tutorials/a-guide-to-time-series-forecasting-with-arima-in-python-3
+def gridsearchSARIMA(series):
     print("Finding best ARIMA hyperparameters...")
     # Define the p, d and q parameters to take any value between 0 and 2
     p = q = range(0, 2)
@@ -211,17 +182,77 @@ def gridSearchOrder(series):
     print('optimal parameters:', best_params)
     return best_params
 
-# calc Auto.ARIMA
-def calc_autoARIMA(series_all):
-    best_params = gridSearchOrder(series_all)
-    calc_ARIMA(series_all, best_params.param, best_params.param_seasonal)  # “frequency” argument is the number of observations per season
 
-### do stuff ###
-polygon = 38
-print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
-series_all, series_train, series_test = load_data(polygon)
 # calc Auto.ARIMA
-calc_autoARIMA()
-# calc AR model
-calc_ARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
-print("Finished at %s" % (str(polygon), str(datetime.now())))
+def calc_autoSARIMA(series_all):
+    best_params = gridsearchSARIMA(series_all)
+    df_autoarima = calc_SARIMA(series_all, best_params.param, best_params.param_seasonal)
+    return df_autoarima
+
+
+# create forecast model and plot, save plot under /img
+def calc_fbprophet(series):
+    # basic setup
+    cv_horizon_amount = 24  # how far cv looks into future
+    cv_horizon_unit = 'hour'  # units: sec, minute, hour, day, week, month
+    # prep cols for Prophet
+    model = Prophet()
+    model.fit(series)
+    print('model fitted.')
+    from fbprophet.diagnostics import cross_validation
+    cv_horizon = str(cv_horizon_amount) + ' ' + cv_horizon_unit
+    df_fbprophet = cross_validation(model, horizon=cv_horizon)  # hour, day, week (singular)
+    # set timestamp as index and convert to datetime
+    df_fbprophet = df_fbprophet.set_index('ds')
+    df_fbprophet.index = pd.to_datetime(df_fbprophet.index, infer_datetime_format=True)
+    return df_fbprophet
+
+
+# do stuff #
+def process(polygon):
+    print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
+    series_all, series_train, series_test, df_all = load_data(polygon)
+    # calculate all models
+    # calc fbprophet
+    df_fbprophet = calc_fbprophet(df_all)
+    mape_fbprophet = MAPE(df_fbprophet.y, df_fbprophet.yhat)
+    # calc AR model
+    df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
+    mape_AR = MAPE(df_AR.y, df_AR.yhat)
+    # calc Auto.ARIMA
+    mape_autoSARIMA = 0
+    #df_autoSARIMA = calc_autoSARIMA(series_all)
+    #mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
+
+    # plot one large <3 graph
+    # observed data
+    df_fbprophet.y.plot(color='grey', alpha=0.7)
+    # fbprophet
+    fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
+    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
+    # AR
+    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
+    # AutoSARIMA
+    #df_autoSARIMA.plot(linestyle='--', alpha=0.7, linewidth=2)
+    # format plot
+    pyplot.legend(['observed',
+                   'fbprophet (MAPE: %.2f)' % mape_fbprophet,
+                   'AR (MAPE: %.2f)' % mape_AR,
+                   'AutoARIMA (MAPE: %.2f' % mape_autoSARIMA])
+    pyplot.show()
+    pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
+    pyplot.close()
+    pyplot.clf()
+
+    print("Finished %s at %s" % (str(polygon), str(datetime.now())))
+
+
+# run stuff
+from multiprocessing import Pool
+import os
+
+polygon_list = [6, 38, 14]
+if __name__ == '__main__':
+    #pool = Pool()
+    #pool.map(process, polygon_list)
+    process(6)

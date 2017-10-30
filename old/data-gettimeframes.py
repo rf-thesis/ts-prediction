@@ -6,7 +6,7 @@ startdate = dateutil.parser.parse('2017-06-26 12:00:00')    # goes from 26-06 to
 enddate =   dateutil.parser.parse('2017-06-30 12:00:00')
 
 filename_data = '2017_devicecount15m.csv'
-filename_pols = '2017_devicecount15m-polygons.csv'
+filename_pols = '2017_dcount15m-polygons.csv'
 basepath = 'data/'
 
 #polygon_id,devices,timestamp
