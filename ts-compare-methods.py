@@ -3,21 +3,17 @@
 #
 from datetime import datetime, timedelta
 
+import multiprocessing
 from fbprophet import Prophet
-from statsmodels import tsa
-
-import dateutil
-import matplotlib
 import pandas as pd
 
-from helpers.getpolygonname import getname
+from helpers.getpolygonname import getname, gettype
 import numpy as np
 from statsmodels.graphics.tsaplots import plot_acf
 # from pandas.plotting import lag_plot, autocorrelation_plot
 from pandas import DataFrame
 from pandas import concat
 from matplotlib import pyplot
-from statsmodels.tsa.arima_model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 startdate = pd.to_datetime('2017-06-27 04:00:00')  # goes from 26-06 to 05-07
@@ -218,9 +214,9 @@ def process(polygon):
 
     # calc Auto.ARIMA
     mape_autoSARIMA = 0
-    df_autoSARIMA = calc_autoSARIMA(series_all)
-    mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-    df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
+    # df_autoSARIMA = calc_autoSARIMA(series_all)
+    # mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
+    # df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
 
 
     # format plot (http://matplotlib.org/users/customizing.html)
@@ -235,10 +231,6 @@ def process(polygon):
     pyplot.xlabel('')
     pyplot.ylabel('')
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict))
-    #pyplot.legend(['observed',
-    #               'fbprophet (MAPE: %.2f)' % mape_fbprophet,
-    #               'AR (MAPE: %.2f)' % mape_AR,
-    #               'AutoARIMA (MAPE: %.2f' % mape_autoSARIMA])
     pyplot.legend()
     pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
     pyplot.show()
@@ -246,13 +238,26 @@ def process(polygon):
     pyplot.clf()
 
     print("Finished %s at %s" % (str(polygon), str(datetime.now())))
+    return {'pol': polygon,
+            'pol_name': getname(polygon),
+            'pol_type': gettype(polygon),
+            'mape_AR': mape_AR,
+            'mape_AutoARIMA': mape_autoSARIMA,
+            'mape_fbprophet': mape_fbprophet}
 
 
 # run stuff
 from multiprocessing import Pool
 
-polygon_list = [6, 49, 18, 5, 2, 25]   # Inner Area, Orange, Rising, Camping C, Bus/Taxi, Camping E
+polygon_list = [6, 49, 18, 5, 2, 25]  # Inner Area, Orange, Rising, Camping C, Bus/Taxi, Camping E
+
 if __name__ == '__main__':
     #pool = Pool()
-    #pool.map(process, polygon_list)
-    process(6)
+    #results = pool.map(process, [6, 7])  # function, list TODO: change to 'polygon_list'
+    results = []  # TODO: REMOVE
+    results.append(process(8))
+    results.append(process(9))
+
+    df_results = pd.DataFrame.from_dict(results)
+    df_results = df_results.set_index('pol')
+    df_results.to_csv('results/2017_MAPE.csv')
