@@ -133,26 +133,13 @@ def calc_SARIMA(series_data, order, seasonal_order):
     return df_cv
 
 
-def plotSARIMA(pred, series_all):
-    # plot graph
-    pred_ci = pred.conf_int()
-    ax = series_all.plot(label='observed')
-    pred.predicted_mean.plot(ax=ax, label='forecast', alpha=.7)
-
-    ax.fill_between(pred_ci.index,
-                    pred_ci.iloc[:, 0],
-                    pred_ci.iloc[:, 1], color='k', alpha=.2)
-    pyplot.legend()
-    pyplot.show()
-
-
 # bruteforce find optimal order
 # code inspired by https://www.digitalocean.com/community/tutorials/a-guide-to-time-series-forecasting-with-arima-in-python-3
 def gridsearchSARIMA(series):
     print("Finding best ARIMA hyperparameters...")
     # Define the p, d and q parameters to take any value between 0 and 2
-    p = q = range(0, 2)
-    d = range(0, 2)
+    p = q = range(0, 5)
+    d = range(0, 3)
     import itertools
     # Generate all different combinations of p, q and q triplets
     pdq = list(itertools.product(p, d, q))
@@ -180,7 +167,6 @@ def gridsearchSARIMA(series):
 
     best_aic_idx = all_params.aic.idxmin()
     best_params = all_params.loc[best_aic_idx]
-    print(all_params)
     print('optimal parameters:', best_params)
     return best_params
 
@@ -221,20 +207,20 @@ def process(polygon):
     fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
     mape_fbprophet = MAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
     # plot observed data
-    df_fbprophet.y.plot(color='grey', alpha=0.7)
+    df_fbprophet.y.plot(color='grey', alpha=0.7, label='observed')
     # plot predicted
-    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
+    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='fbprophet (MAPE: {:.2f})'.format(mape_fbprophet))
 
     # calc AR model
     df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
     mape_AR = MAPE(df_AR.y, df_AR.yhat)
-    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2)
+    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='AR (MAPE: {:.2f})'.format(mape_AR))
 
     # calc Auto.ARIMA
-    #mape_autoSARIMA = 0
+    mape_autoSARIMA = 0
     df_autoSARIMA = calc_autoSARIMA(series_all)
     mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-    df_autoSARIMA.plot(linestyle='--', alpha=0.7, linewidth=2)
+    df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
 
 
     # format plot (http://matplotlib.org/users/customizing.html)
@@ -246,13 +232,14 @@ def process(polygon):
     pyplot.axes.titlesize = SMALL_SIZE
     pyplot.axes.labelsize = SMALL_SIZE
     # plot description
-    #pyplot.xlabel('timestamp')
-    #pyplot.ylabel('devices')
+    pyplot.xlabel('')
+    pyplot.ylabel('')
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict))
-    pyplot.legend(['observed',
-                   'fbprophet (MAPE: %.2f)' % mape_fbprophet,
-                   'AR (MAPE: %.2f)' % mape_AR,
-                   'AutoARIMA (MAPE: %.2f' % mape_autoSARIMA])
+    #pyplot.legend(['observed',
+    #               'fbprophet (MAPE: %.2f)' % mape_fbprophet,
+    #               'AR (MAPE: %.2f)' % mape_AR,
+    #               'AutoARIMA (MAPE: %.2f' % mape_autoSARIMA])
+    pyplot.legend()
     pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
     pyplot.show()
     pyplot.close()
@@ -266,6 +253,6 @@ from multiprocessing import Pool
 
 polygon_list = [6, 49, 18, 5, 2, 25]   # Inner Area, Orange, Rising, Camping C, Bus/Taxi, Camping E
 if __name__ == '__main__':
-    pool = Pool()
-    pool.map(process, polygon_list)
-    #process(6)
+    #pool = Pool()
+    #pool.map(process, polygon_list)
+    process(6)
