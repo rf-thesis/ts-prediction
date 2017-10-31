@@ -24,7 +24,7 @@ slices_per_hour = 4  # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')  # goes from 26-06 to 05-07
 enddate = dateutil.parser.parse('2017-07-02 12:00:00')
 filename_data = '2017_devicecount15m.csv'
-filename_pols = '2017_dcount15m-polygons.csv'
+filename_pols = '2017_polygonlist.csv'
 basepath = 'data/'
 
 

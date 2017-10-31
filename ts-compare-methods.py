@@ -19,7 +19,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 startdate = pd.to_datetime('2017-06-27 04:00:00')  # goes from 26-06 to 05-07
 enddate = pd.to_datetime('2017-07-02 04:00:00')
 filename_data = '2017_dcount15m_harmonised.csv'
-filename_pols = '2017_dcount15m-polygons.csv'
+filename_pols = '2017_polygonlist.csv'
 basepath = 'data/'
 
 hours_to_predict = 24
@@ -119,12 +119,10 @@ def calc_SARIMA(series_data, order, seasonal_order):
     # calc MAPE
     y = series_data[len(series_data) - slices_to_predict:]
     yhat = pred.predicted_mean
-    print('MAPE: % .2f' % MAPE(y, yhat))
     # build dataframe
     df_cv = pd.concat([y, yhat], axis=1, join='inner')
     df_cv.index.names = ['ds']
     df_cv.columns = ['y', 'yhat']
-    print(df_cv.head(n=10))
     # plotSARIMA(pred, series_data)
     return df_cv
 
@@ -134,8 +132,8 @@ def calc_SARIMA(series_data, order, seasonal_order):
 def gridsearchSARIMA(series):
     print("Finding best ARIMA hyperparameters...")
     # Define the p, d and q parameters to take any value between 0 and 2
-    p = q = range(0, 3)
-    d = range(0, 2)
+    p = q = range(1, 3)
+    d = range(1, 2)
     import itertools
     # Generate all different combinations of p, q and q triplets
     pdq = list(itertools.product(p, d, q))
@@ -163,7 +161,7 @@ def gridsearchSARIMA(series):
 
     best_aic_idx = all_params.aic.idxmin()
     best_params = all_params.loc[best_aic_idx]
-    print('optimal parameters:', best_params)
+    print('Optimal parameters:', best_params)
     return best_params
 
 
@@ -197,6 +195,8 @@ def process(polygon):
     print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
     series_all, series_train, series_test, df_all = load_data(polygon)
 
+    # output size
+    pyplot.figure(figsize=(2.5, 2))
     # calculate all models
     # calc fbprophet
     df_fbprophet = calc_fbprophet(df_all)
@@ -214,24 +214,26 @@ def process(polygon):
 
     # calc Auto.ARIMA
     mape_autoSARIMA = 0
-    df_autoSARIMA = calc_autoSARIMA(series_all)
-    mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-    df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
-
+    if autoARIMA:
+        df_autoSARIMA = calc_autoSARIMA(series_all)
+        mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
+        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
 
     # format plot (http://matplotlib.org/users/customizing.html)
     # font size
-    SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE = 8, 9, 12
-    pyplot.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+    SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE = 6, 8, 10
+    pyplot.rc('legend', fontsize='xx-small', loc='upper left')  # legend fontsize
     pyplot.tick_params(axis='both', which='major', labelsize=SMALL_SIZE)
     pyplot.tick_params(axis='both', which='minor', labelsize=SMALL_SIZE)
-    pyplot.axes.titlesize = SMALL_SIZE
     pyplot.axes.labelsize = SMALL_SIZE
     # plot description
     pyplot.xlabel('')
     pyplot.ylabel('')
-    pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict))
+    pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict), fontsize=SMALL_SIZE)
+    # plot legend and set alpha
     pyplot.legend()
+    pyplot.legend().get_frame().set_alpha(0.5)
+    # save img
     pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
     #pyplot.show()
     pyplot.close()
@@ -250,13 +252,15 @@ def process(polygon):
 from multiprocessing import Pool
 
 polygon_list = [6, 49, 18, 5, 2, 25]  # Inner Area, Orange, Rising, Camping C, Bus/Taxi, Camping E
+autoARIMA = False
 
 if __name__ == '__main__':
     #pool = Pool()
     #results = pool.map(process, [6, 7])  # function, list TODO: change to 'polygon_list'
+
     results = []  # TODO: REMOVE
-    results.append(process(8))
-    results.append(process(9))
+    results.append(process(6))
+    #for i in polygon_list: results.append(process(i))
 
     df_results = pd.DataFrame.from_dict(results)
     df_results = df_results.set_index('pol')
