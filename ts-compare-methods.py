@@ -56,6 +56,13 @@ def MAPE(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 
+def SMAPE(y_true, y_pred):
+    denominator = (np.abs(y_true) + np.abs(y_pred))
+    diff = np.abs(y_true - y_pred) / denominator
+    diff[denominator == 0] = 0.0
+    return 200 * np.mean(diff)
+
+
 def checkAC():
     # show data
     series_all.plot(color="orange")
@@ -201,23 +208,23 @@ def process(polygon):
     # calc fbprophet
     df_fbprophet = calc_fbprophet(df_all)
     fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
-    mape_fbprophet = MAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
+    smape_fbprophet = SMAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
     # plot observed data
     df_fbprophet.y.plot(color='grey', alpha=0.7, label='observed')
     # plot predicted
-    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='fbprophet (MAPE: {:.2f})'.format(mape_fbprophet))
+    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
 
     # calc AR model
     df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
-    mape_AR = MAPE(df_AR.y, df_AR.yhat)
-    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='AR (MAPE: {:.2f})'.format(mape_AR))
+    smape_AR = SMAPE(df_AR.y, df_AR.yhat)
+    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='AR (SMAPE: {:.2f})'.format(smape_AR))
 
     # calc Auto.ARIMA
-    mape_autoSARIMA = 0
+    smape_autoSARIMA = 0
     if autoARIMA:
         df_autoSARIMA = calc_autoSARIMA(series_all)
-        mape_autoSARIMA = MAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (MAPE: {:.2f})'.format(mape_autoSARIMA))
+        smape_autoSARIMA = SMAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
+        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
 
     # format plot (http://matplotlib.org/users/customizing.html)
     # font size
@@ -243,15 +250,15 @@ def process(polygon):
     return {'pol': polygon,
             'pol_name': getname(polygon),
             'pol_type': gettype(polygon),
-            'mape_AR': mape_AR,
-            'mape_AutoARIMA': mape_autoSARIMA,
-            'mape_fbprophet': mape_fbprophet}
+            'mape_AR': smape_AR,
+            'mape_AutoARIMA': smape_autoSARIMA,
+            'mape_fbprophet': smape_fbprophet}
 
 
 # run stuff
 from multiprocessing import Pool
 
-polygon_list = [6, 49, 18, 5, 2, 25]  # Inner Area, Orange, Rising, Camping C, Bus/Taxi, Camping E
+polygon_list = [6, 49, 18, 5, 25, 11, 16]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone
 autoARIMA = False
 
 if __name__ == '__main__':
