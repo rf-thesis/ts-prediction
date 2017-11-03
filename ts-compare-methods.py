@@ -203,7 +203,7 @@ def process(polygon):
     series_all, series_train, series_test, df_all = load_data(polygon)
 
     # output size
-    pyplot.figure(figsize=(2.5, 2))
+    pyplot.figure(figsize=(3, 2))
     # calculate all models
     # calc fbprophet
     df_fbprophet = calc_fbprophet(df_all)
@@ -212,19 +212,19 @@ def process(polygon):
     # plot observed data
     df_fbprophet.y.plot(color='grey', alpha=0.7, label='observed')
     # plot predicted
-    fbprophet_yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
+    fbprophet_yhat.plot(linestyle='--', alpha=0.55, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
 
     # calc AR model
     df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
     smape_AR = SMAPE(df_AR.y, df_AR.yhat)
-    df_AR.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='AR (SMAPE: {:.2f})'.format(smape_AR))
+    df_AR.yhat.plot(linestyle='--', alpha=0.55, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
 
     # calc Auto.ARIMA
     smape_autoSARIMA = 0
     if autoARIMA:
         df_autoSARIMA = calc_autoSARIMA(series_all)
         smape_autoSARIMA = SMAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.7, linewidth=2, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
+        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.55, linewidth=1.5, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
 
     # format plot (http://matplotlib.org/users/customizing.html)
     # font size
@@ -241,7 +241,7 @@ def process(polygon):
     pyplot.legend()
     pyplot.legend().get_frame().set_alpha(0.5)
     # save img
-    pyplot.savefig('img/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
+    pyplot.savefig('img/compare/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
     #pyplot.show()
     pyplot.close()
     pyplot.clf()
@@ -250,25 +250,23 @@ def process(polygon):
     return {'pol': polygon,
             'pol_name': getname(polygon),
             'pol_type': gettype(polygon),
-            'mape_AR': smape_AR,
-            'mape_AutoARIMA': smape_autoSARIMA,
-            'mape_fbprophet': smape_fbprophet}
+            'smape_AR': smape_AR,
+            'smape_AutoARIMA': smape_autoSARIMA,
+            'smape_fbprophet': smape_fbprophet}
 
 
 # run stuff
 from multiprocessing import Pool
 
-polygon_list = [6, 49, 18, 5, 25, 11, 16]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone
-autoARIMA = False
+polygon_list = [6, 49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
+#will not work for some polys
+#df_polygons = pd.read_csv('data/2017_polygoninfo_filtered.csv', usecols=["ogr_fid"], nrows=None)
+#polygon_list = df_polygons.values.astype(int).flatten()
+autoARIMA = True
 
 if __name__ == '__main__':
-    #pool = Pool()
-    #results = pool.map(process, [6, 7])  # function, list TODO: change to 'polygon_list'
-
-    results = []  # TODO: REMOVE
-    results.append(process(6))
-    #for i in polygon_list: results.append(process(i))
-
+    pool = Pool()
+    results = pool.map(process, polygon_list)
     df_results = pd.DataFrame.from_dict(results)
     df_results = df_results.set_index('pol')
-    df_results.to_csv('results/2017_MAPE.csv')
+    df_results.to_csv('results/2017_SMAPE.csv')
