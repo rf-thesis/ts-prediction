@@ -52,12 +52,12 @@ def plot_fbprophet(model, polygon, forecast, hours_to_forecast, train_to_test_ra
     #plt.rcParams["figure.figsize"] = [3.0, 3.0]
     model.plot(forecast)
     # todo: add observed
-    plt.savefig('img/forecast/' + 'fc_pol' + str(polygon) + '_' + str(hours_to_forecast) + '_ttr' + str(train_to_test_ratio) + '.png', bbox_inches='tight')
+    plt.savefig('img/forecast/' + 'fc_pol' + str(polygon) + '_hr' + str(hours_to_forecast) + '_ttr' + str(train_to_test_ratio) + '.png', bbox_inches='tight')
     plt.close()
     plt.clf()
-    if hours_to_forecast == 24:
+    if (train_to_test_ratio == 3 & hours_to_forecast == 24):
         model.plot_components(forecast)
-        plt.savefig('img/forecast/' + 'decomp_pol' + str(polygon) + '_' + str(hours_to_forecast) + '_ttr' + str(train_to_test_ratio) + '.png', bbox_inches='tight')
+        plt.savefig('img/forecast/' + 'decomp_pol' + str(polygon) + '_hr' + str(hours_to_forecast) + '_ttr' + str(train_to_test_ratio) + '.png', bbox_inches='tight')
 
 
 if __name__ == '__main__':

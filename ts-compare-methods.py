@@ -46,7 +46,8 @@ def load_data(polygon):
     print('Series frequency: %s' % str(series_all.index.freq))
     # split into horizon (test data) and 3*horizon (train data) to make comparable to fbprophet
     split_point = len(series_all) - slices_to_predict
-    series_train, series_test = series_all[0:split_point], series_all[split_point:]
+    train_size = split_point * 2
+    series_train, series_test = series_all[train_size:split_point], series_all[split_point:]
     return series_all, series_train, series_test, df_trimmed
 
 

@@ -1,0 +1,287 @@
+<?xml version='1.0' encoding='utf-8' ?>
+
+<!-- build 10400.17.0915.2112                               -->
+<workbook original-version='10.4' source-build='10.4.0 (10400.17.0915.2112)' source-platform='mac' version='10.4' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <preferences>
+    <preference name='ui.encoding.shelf.height' value='24' />
+    <preference name='ui.shelf.height' value='26' />
+  </preferences>
+  <datasources>
+    <datasource caption='2017_fitting-times' inline='true' name='federated.03vmmh30smyfl515rxji41emxov0' version='10.4'>
+      <connection class='federated'>
+        <named-connections>
+          <named-connection caption='2017_fitting-times' name='textscan.01gcfip1cmj9pj1b8bgr007k8idj'>
+            <connection class='textscan' directory='/Users/5p4ck0/Dropbox/CBS/Thesis/ts-prediction/results' filename='2017_fitting-times.csv' password='' server='' />
+          </named-connection>
+        </named-connections>
+        <relation connection='textscan.01gcfip1cmj9pj1b8bgr007k8idj' name='2017_fitting-times.csv' table='[2017_fitting-times#csv]' type='table'>
+          <columns character-set='UTF-8' header='yes' locale='en' separator=','>
+            <column datatype='real' name='AR' ordinal='0' />
+            <column datatype='real' name='AutoAR' ordinal='1' />
+            <column datatype='real' name='fbp' ordinal='2' />
+          </columns>
+        </relation>
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>AR</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[AR]</local-name>
+            <parent-name>[2017_fitting-times.csv]</parent-name>
+            <remote-alias>AR</remote-alias>
+            <ordinal>0</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='integer' name='DebugRemoteMetadata (size)'>8</attribute>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;double&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>AutoAR</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[AutoAR]</local-name>
+            <parent-name>[2017_fitting-times.csv]</parent-name>
+            <remote-alias>AutoAR</remote-alias>
+            <ordinal>1</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='integer' name='DebugRemoteMetadata (size)'>8</attribute>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;double&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>fbp</remote-name>
+            <remote-type>5</remote-type>
+            <local-name>[fbp]</local-name>
+            <parent-name>[2017_fitting-times.csv]</parent-name>
+            <remote-alias>fbp</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>real</local-type>
+            <aggregation>Sum</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='integer' name='DebugRemoteMetadata (size)'>8</attribute>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;double&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='capability'>
+            <remote-name />
+            <remote-type>0</remote-type>
+            <parent-name>[2017_fitting-times.csv]</parent-name>
+            <remote-alias />
+            <aggregation>Count</aggregation>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='character-set'>&quot;UTF-8&quot;</attribute>
+              <attribute datatype='string' name='collation'>&quot;en_US&quot;</attribute>
+              <attribute datatype='string' name='currency'>&quot;¤&quot;</attribute>
+              <attribute datatype='string' name='field-delimiter'>&quot;,&quot;</attribute>
+              <attribute datatype='string' name='header-row'>&quot;true&quot;</attribute>
+              <attribute datatype='string' name='locale'>&quot;en&quot;</attribute>
+              <attribute datatype='string' name='single-char'>&quot;&quot;</attribute>
+            </attributes>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <aliases enabled='yes' />
+      <column datatype='string' name='[:Measure Names]' role='dimension' type='nominal'>
+        <aliases>
+          <alias key='&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:AR:qk]&quot;' value='AR' />
+          <alias key='&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:AutoAR:qk]&quot;' value='Auto-ARIMA' />
+          <alias key='&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:fbp:qk]&quot;' value='fbprophet' />
+        </aliases>
+      </column>
+      <column datatype='real' name='[AR]' role='measure' type='quantitative' />
+      <column caption='Auto AR' datatype='real' name='[AutoAR]' role='measure' type='quantitative' />
+      <column datatype='integer' name='[Number of Records (bin)]' role='dimension' type='quantitative'>
+        <calculation class='bin' decimals='0' formula='[Number of Records]' peg='0' size='1' />
+      </column>
+      <column datatype='integer' name='[Number of Records]' role='measure' type='quantitative' user:auto-column='numrec'>
+        <calculation class='tableau' formula='1' />
+      </column>
+      <column caption='Fbp' datatype='real' name='[fbp]' role='measure' type='quantitative' />
+      <column-instance column='[AR]' derivation='Median' name='[med:AR:qk]' pivot='key' type='quantitative' />
+      <column-instance column='[AutoAR]' derivation='Median' name='[med:AutoAR:qk]' pivot='key' type='quantitative' />
+      <column-instance column='[fbp]' derivation='Median' name='[med:fbp:qk]' pivot='key' type='quantitative' />
+      <layout dim-ordering='alphabetic' dim-percentage='0.437403' measure-ordering='alphabetic' measure-percentage='0.562597' show-structure='true' />
+      <date-options start-of-week='monday' />
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Fitting Times'>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='2017_fitting-times' name='federated.03vmmh30smyfl515rxji41emxov0' />
+          </datasources>
+          <datasource-dependencies datasource='federated.03vmmh30smyfl515rxji41emxov0'>
+            <column datatype='real' name='[AR]' role='measure' type='quantitative' />
+            <column caption='Auto AR' datatype='real' name='[AutoAR]' role='measure' type='quantitative' />
+            <column-instance column='[AR]' derivation='Attribute' name='[attr:AR:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[AutoAR]' derivation='Attribute' name='[attr:AutoAR:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[fbp]' derivation='Avg' name='[avg:fbp:qk]' pivot='key' type='quantitative' />
+            <column caption='Fbp' datatype='real' name='[fbp]' role='measure' type='quantitative' />
+            <column-instance column='[AR]' derivation='Median' name='[med:AR:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[AutoAR]' derivation='Median' name='[med:AutoAR:qk]' pivot='key' type='quantitative' />
+            <column-instance column='[fbp]' derivation='Median' name='[med:fbp:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <filter class='categorical' column='[federated.03vmmh30smyfl515rxji41emxov0].[:Measure Names]'>
+            <groupfilter function='union' user:op='manual'>
+              <groupfilter function='member' level='[:Measure Names]' member='&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:AR:qk]&quot;' />
+              <groupfilter function='member' level='[:Measure Names]' member='&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:AutoAR:qk]&quot;' />
+              <groupfilter function='member' level='[:Measure Names]' member='&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:fbp:qk]&quot;' />
+            </groupfilter>
+          </filter>
+          <sort class='manual' column='[federated.03vmmh30smyfl515rxji41emxov0].[:Measure Names]' direction='ASC'>
+            <dictionary>
+              <bucket>&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:AR:qk]&quot;</bucket>
+              <bucket>&quot;[federated.03vmmh30smyfl515rxji41emxov0].[med:AutoAR:qk]&quot;</bucket>
+              <bucket>&quot;[federated.03vmmh30smyfl515rxji41emxov0].[avg:fbp:qk]&quot;</bucket>
+            </dictionary>
+          </sort>
+          <slices>
+            <column>[federated.03vmmh30smyfl515rxji41emxov0].[:Measure Names]</column>
+          </slices>
+          <aggregation value='true' />
+        </view>
+        <style>
+          <style-rule element='axis'>
+            <encoding attr='space' class='0' field='[federated.03vmmh30smyfl515rxji41emxov0].[Multiple Values]' field-type='quantitative' scale='log' scope='cols' type='space' />
+            <format attr='title' class='0' field='[federated.03vmmh30smyfl515rxji41emxov0].[Multiple Values]' scope='cols' value='Fitting Time in Minutes' />
+            <format attr='subtitle' class='0' field='[federated.03vmmh30smyfl515rxji41emxov0].[Multiple Values]' scope='cols' value='' />
+            <format attr='auto-subtitle' class='0' field='[federated.03vmmh30smyfl515rxji41emxov0].[Multiple Values]' scope='cols' value='true' />
+          </style-rule>
+          <style-rule element='refline'>
+            <format attr='stroke-color' id='refline0' value='#000000' />
+          </style-rule>
+        </style>
+        <panes>
+          <pane selection-relaxation-option='selection-relaxation-allow'>
+            <view>
+              <breakdown value='auto' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <lod column='[federated.03vmmh30smyfl515rxji41emxov0].[attr:AR:qk]' />
+              <lod column='[federated.03vmmh30smyfl515rxji41emxov0].[attr:AutoAR:qk]' />
+            </encodings>
+          </pane>
+        </panes>
+        <rows>[federated.03vmmh30smyfl515rxji41emxov0].[:Measure Names]</rows>
+        <cols>[federated.03vmmh30smyfl515rxji41emxov0].[Multiple Values]</cols>
+      </table>
+    </worksheet>
+  </worksheets>
+  <windows source-height='30'>
+    <window class='worksheet' maximized='true' name='Fitting Times'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+            <card type='measures' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='2147483647'>
+            <card type='columns' />
+          </strip>
+          <strip size='2147483647'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+        <edge name='right'>
+          <strip size='160'>
+            <card param='[federated.03vmmh30smyfl515rxji41emxov0].[:Measure Names]' type='highlighter' />
+          </strip>
+        </edge>
+      </cards>
+      <viewpoint>
+        <highlight>
+          <color-one-way>
+            <field>[federated.03vmmh30smyfl515rxji41emxov0].[:Measure Names]</field>
+            <field>[federated.03vmmh30smyfl515rxji41emxov0].[none:AR:qk]</field>
+            <field>[federated.03vmmh30smyfl515rxji41emxov0].[none:AutoAR:qk]</field>
+            <field>[federated.03vmmh30smyfl515rxji41emxov0].[none:fbp:qk]</field>
+          </color-one-way>
+        </highlight>
+      </viewpoint>
+    </window>
+  </windows>
+  <thumbnails>
+    <thumbnail height='119' name='Fitting Times' width='192'>
+      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
+    </thumbnail>
+  </thumbnails>
+</workbook>
