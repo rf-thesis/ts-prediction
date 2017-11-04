@@ -212,19 +212,19 @@ def process(polygon):
     # plot observed data
     df_fbprophet.y.plot(color='grey', alpha=0.7, label='observed')
     # plot predicted
-    fbprophet_yhat.plot(linestyle='--', alpha=0.55, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
+    fbprophet_yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
 
     # calc AR model
     df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
     smape_AR = SMAPE(df_AR.y, df_AR.yhat)
-    df_AR.yhat.plot(linestyle='--', alpha=0.55, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
+    df_AR.yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
 
     # calc Auto.ARIMA
     smape_autoSARIMA = 0
     if autoARIMA:
         df_autoSARIMA = calc_autoSARIMA(series_all)
         smape_autoSARIMA = SMAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.55, linewidth=1.5, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
+        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
 
     # format plot (http://matplotlib.org/users/customizing.html)
     # font size
