@@ -210,7 +210,7 @@ def process(polygon):
     fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
     smape_fbprophet = SMAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
     # plot observed data
-    df_fbprophet.y.plot(color='grey', alpha=0.7, label='observed')
+    df_fbprophet.y.plot(color='grey', alpha=0.65, label='observed')
     # plot predicted
     fbprophet_yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
 
