@@ -87,7 +87,7 @@ def checkAC():
 
 
 # calculate AR Model
-def calc_AR(series_train):
+def calc_AR(series_train, series_test):
     model = AR(series_train)
     model_fit = model.fit()
     print('Lag: %s' % model_fit.k_ar)
@@ -195,7 +195,7 @@ def process(polygon):
     fbprophet_yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))       # plot predicted
 
     # calc AR model
-    df_AR = calc_AR(series_train)
+    df_AR = calc_AR(series_train, series_test)
     smape_AR = SMAPE(series_test, df_AR.yhat)
     df_AR.yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
 
