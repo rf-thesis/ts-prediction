@@ -16,7 +16,7 @@ fc_hours_to_predict = 4  # how far forecast looks into future
 run_cv = True  # run CV yes/no
 cv_horizon_amount = 24  # how far cv looks into future
 cv_horizon_unit = 'hour'  # units: sec, minute, hour, day, week, month
-hr_range_arr = [24, 12, 8, 4, 2, 1]  # state model accuracy for these hours for RMSE, R^2, MAPE
+hr_range_arr = [32, 24, 16, 12, 8, 4, 2, 1]  # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
 plotforecasts, plotcrossvals, plotcvuncertainty = False, True, True

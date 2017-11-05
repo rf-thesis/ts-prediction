@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import multiprocessing
 from fbprophet import Prophet
 import pandas as pd
+from statsmodels.tsa.ar_model import AR
 
 from helpers.getpolygonname import getname, gettype
 import numpy as np
@@ -86,34 +87,15 @@ def checkAC():
     pyplot.show()
 
 
-def persistancemodel():
-    # build "persistance model" for baseline evaluation
-    # create lagged dataset
-    values = DataFrame(series_all.values)
-    dataframe = concat([values.shift(1), values], axis=1)
-    dataframe.columns = ['t-1', 't+1']
-    # split into train and test sets
-    X = dataframe.values
-    train, test = X[1:len(X) - slices_to_predict], X[len(X) - slices_to_predict:]
-    train_X, train_y = train[:, 0], train[:, 1]
-    test_X, test_y = test[:, 0], test[:, 1]
-
-    # persistence model
-    def model_persistence(x):
-        return x
-
-    # walk-forward validation
-    predictions = list()
-    for x in test_X:
-        yhat = model_persistence(x)
-        predictions.append(yhat)
-    test_score = MAPE(test_y, predictions)
-    print('Test MAPE: %.3f' % test_score)
-    # plot predictions vs expected
-    pyplot.plot(test_y)
-    pyplot.plot(predictions, color='red')
-    pyplot.show()
-    pyplot.clf()
+# calculate AR Model
+def calc_AR(series_train):
+    model = AR(series_train)
+    model_fit = model.fit()
+    print('Lag: %s' % model_fit.k_ar)
+    print('Coefficients: %s' % model_fit.params)
+    # make predictions
+    yhat = model_fit.predict(start=len(series_train), end=len(series_train)+len(series_test)-1, dynamic=True)
+    return yhat
 
 
 # calculate (S)AR-I-MA model
@@ -210,14 +192,12 @@ def process(polygon):
     df_fbprophet = calc_fbprophet(df_all)
     fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
     smape_fbprophet = SMAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
-    # plot observed data
-    df_fbprophet.y.plot(color='grey', alpha=0.65, label='observed')
-    # plot predicted
-    fbprophet_yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))
+    df_fbprophet.y.plot(color='grey', alpha=0.65, label='observed')     # plot observed data
+    fbprophet_yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))       # plot predicted
 
     # calc AR model
-    df_AR = calc_SARIMA(series_all, (1, 0, 0), (0, 0, 0, 48))
-    smape_AR = SMAPE(df_AR.y, df_AR.yhat)
+    df_AR = calc_AR(series_train)
+    smape_AR = SMAPE(series_test, df_AR.yhat)
     df_AR.yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
 
     # calc Auto.ARIMA
