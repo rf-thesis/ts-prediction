@@ -1,34 +1,28 @@
-#
-# original code from https://machinelearningmastery.com/autoregression-models-time-series-forecasting-python/
-#
-from datetime import datetime, timedelta
-
-import multiprocessing
+from datetime import datetime
 from fbprophet import Prophet
 import pandas as pd
 from statsmodels.tsa.ar_model import AR
-
 from helpers.getpolygonname import getname, gettype
 import numpy as np
-from statsmodels.graphics.tsaplots import plot_acf
-# from pandas.plotting import lag_plot, autocorrelation_plot
-from pandas import DataFrame
-from pandas import concat
 from matplotlib import pyplot
 from statsmodels.tsa.statespace.sarimax import SARIMAX
+from multiprocessing import Pool
 
+# set base data parameters
 startdate = pd.to_datetime('2017-06-27 04:00:00')  # goes from 26-06 to 05-07
 enddate = pd.to_datetime('2017-07-02 04:00:00')
 filename_data = '2017_dcount15m_harmonised.csv'
 filename_pols = '2017_polygonlist.csv'
 basepath = 'data/'
 
+# global constants
 hours_to_predict = 24
 slices_to_predict = hours_to_predict * 4
 global_freq = None
 
 
-def load_data(polygon):
+# load and filter data, split into pd.Series for statsmodels and pd.DataFrame for fbprophet
+def load_transform_data(polygon):
     # load data
     df_orig = pd.read_csv(basepath + filename_data, squeeze=True)
     # prep cols for Prophet
@@ -67,34 +61,12 @@ def MAPE(y_true, y_pred):
     y_true, y_pred = np.array(y_true), np.array(y_pred)
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
-
+# calculate sMAPE (timeseries evaluation metric)
 def SMAPE(y_true, y_pred):
     denominator = (np.abs(y_true) + np.abs(y_pred))
     diff = np.abs(y_true - y_pred) / denominator
     diff[denominator == 0] = 0.0
     return 200 * np.mean(diff)
-
-
-def checkAC():
-    # show data
-    series_all.plot(color="orange")
-    pyplot.show()
-    # check for correlation
-    lag_plot(series_all)
-    pyplot.show()
-    # creates a lagged version of the dataset and calculates a correlation matrix of each column with other columns (
-    # including itself)
-    values = DataFrame(series_all.values)
-    dataframe = concat([values.shift(1), values], axis=1)
-    dataframe.columns = ['t-1', 't+1']
-    result = dataframe.corr()
-    print(result)
-    # autocorrelation plot
-    autocorrelation_plot(series_all)
-    pyplot.show()
-    # statsmodel AC plot
-    plot_acf(series_all, lags=31)
-    pyplot.show()
 
 
 # calculate AR Model
@@ -191,26 +163,24 @@ def calc_fbprophet(series):
     return df_fbprophet
 
 
-# do stuff #
+# process one polygon
 def process(polygon):
     print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
-    series_all, series_train, series_test, df_all = load_data(polygon)
+    series_all, series_train, series_test, df_all = load_transform_data(polygon)
     # output size (must be up here)
     pyplot.figure(figsize=(3, 2))
 
     # calculate all models
-    # calc AR model
-    AR_y, AR_yhat = calc_AR(series_train, series_test)
-    smape_AR = SMAPE(AR_y, AR_yhat)
-    AR_yhat.plot(color='green', linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
-
     # calc fbprophet
     df_fbprophet = calc_fbprophet(df_all)
     fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
     smape_fbprophet = SMAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
     df_fbprophet.y.plot(color='grey', alpha=0.65, label='observed')     # plot observed data
     fbprophet_yhat.plot(color='blue', linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))       # plot predicted
-
+    # calc AR model
+    AR_y, AR_yhat = calc_AR(series_train, series_test)
+    smape_AR = SMAPE(AR_y, AR_yhat)
+    AR_yhat.plot(color='green', linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
     # calc Auto.ARIMA
     smape_autoSARIMA = 0
     if autoARIMA:
@@ -231,7 +201,7 @@ def process(polygon):
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict), fontsize=SMALL_SIZE)
     # plot legend and set alpha
     pyplot.legend()
-    #pyplot.legend().get_frame().set_alpha(0.5)
+    pyplot.legend().get_frame().set_alpha(0.5)
     # save img
     pyplot.savefig('img/compare/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
     #pyplot.show()
@@ -248,12 +218,9 @@ def process(polygon):
 
 
 # run stuff
-from multiprocessing import Pool
-
 #will not work for some polys
 #df_polygons = pd.read_csv('data/2017_polygoninfo_filtered.csv', usecols=["ogr_fid"], nrows=None)
 #polygon_list = df_polygons.values.astype(int).flatten()
-polygon_list = 49
 polygon_list = [6, 49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
 autoARIMA = True
 
