@@ -25,6 +25,7 @@ basepath = 'data/'
 
 hours_to_predict = 24
 slices_to_predict = hours_to_predict * 4
+global_freq = None
 
 
 def load_data(polygon):
@@ -32,23 +33,33 @@ def load_data(polygon):
     df_orig = pd.read_csv(basepath + filename_data, squeeze=True)
     # prep cols for Prophet
     df_orig = df_orig[df_orig.polygon_id == int(polygon)]
-    df_trimmed = df_orig.drop(['polygon_id'], axis=1)
-    df_trimmed.columns = ['y', 'ds']
+    df_fbprophet = df_orig.drop(['polygon_id'], axis=1)
+    df_fbprophet.columns = ['y', 'ds']
     # set date range
-    df_trimmed.ds = pd.to_datetime(df_trimmed.ds, infer_datetime_format=True)
-    df_trimmed = df_trimmed[(df_trimmed.ds >= startdate) & (df_trimmed.ds <= enddate)]
-    df_trimmed = df_trimmed.set_index(df_trimmed.ds)
+    df_fbprophet.ds = pd.to_datetime(df_fbprophet.ds, infer_datetime_format=True)
+    df_fbprophet = df_fbprophet[(df_fbprophet.ds >= startdate) & (df_fbprophet.ds <= enddate)]
+    # reindex for Series conversion
+    # set new index
+    df_reindexed = df_fbprophet.set_index(df_fbprophet.ds)
+    # remove duplicate indices
+    df_reindexed = df_reindexed[~df_reindexed.index.duplicated(keep='first')] # print(df_fbprophet[df_fbprophet.index.duplicated()])
+    # rename index
+    df_reindexed = df_reindexed.drop(['ds'], axis=1)
+    df_reindexed.index.rename('ds', inplace=True)
+    # set frequency
+    df_reindexed = df_reindexed.asfreq(freq='15min')
+    global_freq = df_reindexed.index.freq
+    print(global_freq)
     # transform values to float and create Series
-    series = df_trimmed.drop(['ds'], axis=1)
-    vals = series.values
+    vals = df_reindexed.values
     vals = [float(i) for i in vals]
-    idx = series.index
+    idx = df_reindexed.index
     series_all = pd.Series(vals, idx)
-    print('Series frequency: %s' % str(series_all.index.freq))
+    series_all.asfreq(freq='15min')
     # split into horizon (test data) and 3*horizon (train data) to make comparable to fbprophet
     split_point = len(series_all) - slices_to_predict
     series_train, series_test = series_all[:split_point], series_all[split_point:]
-    return series_all, series_train, series_test, df_trimmed
+    return series_all, series_train, series_test, df_fbprophet
 
 
 # calculate MAPE (timeseries evaluation metric)
@@ -87,14 +98,15 @@ def checkAC():
 
 
 # calculate AR Model
-def calc_AR(series_train):
+def calc_AR(series_train, series_test):
     model = AR(series_train)
     model_fit = model.fit()
-    print('Lag: %s' % model_fit.k_ar)
+    print('Optimal # of lags: %s' % model_fit.k_ar)
     print('Coefficients: %s' % model_fit.params)
     # make predictions
+    y = series_test
     yhat = model_fit.predict(start=len(series_train), end=len(series_train)+len(series_test)-1, dynamic=True)
-    return yhat
+    return y, yhat
 
 
 # calculate (S)AR-I-MA model
@@ -183,28 +195,28 @@ def calc_fbprophet(series):
 def process(polygon):
     print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
     series_all, series_train, series_test, df_all = load_data(polygon)
-
-    # output size
+    # output size (must be up here)
     pyplot.figure(figsize=(3, 2))
+
     # calculate all models
+    # calc AR model
+    AR_y, AR_yhat = calc_AR(series_train, series_test)
+    smape_AR = SMAPE(AR_y, AR_yhat)
+    AR_yhat.plot(color='green', linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
+
     # calc fbprophet
     df_fbprophet = calc_fbprophet(df_all)
     fbprophet_yhat = df_fbprophet.yhat[len(df_fbprophet) - slices_to_predict:]
     smape_fbprophet = SMAPE(df_fbprophet.y[len(df_fbprophet) - slices_to_predict:], fbprophet_yhat)
     df_fbprophet.y.plot(color='grey', alpha=0.65, label='observed')     # plot observed data
-    fbprophet_yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))       # plot predicted
-
-    # calc AR model
-    df_AR = calc_AR(series_train)
-    smape_AR = SMAPE(series_test, df_AR.yhat)
-    df_AR.yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='AR (SMAPE: {:.2f})'.format(smape_AR))
+    fbprophet_yhat.plot(color='blue', linestyle='--', alpha=0.65, linewidth=1.5, label='fbprophet (SMAPE: {:.2f})'.format(smape_fbprophet))       # plot predicted
 
     # calc Auto.ARIMA
     smape_autoSARIMA = 0
     if autoARIMA:
         df_autoSARIMA = calc_autoSARIMA(series_all)
         smape_autoSARIMA = SMAPE(df_autoSARIMA.y, df_autoSARIMA.yhat)
-        df_autoSARIMA.yhat.plot(linestyle='--', alpha=0.65, linewidth=1.5, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
+        df_autoSARIMA.yhat.plot(color='red', linestyle='--', alpha=0.65, linewidth=1.5, label='Auto-ARIMA (SMAPE: {:.2f})'.format(smape_autoSARIMA))
 
     # format plot (http://matplotlib.org/users/customizing.html)
     # font size
@@ -219,7 +231,7 @@ def process(polygon):
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict), fontsize=SMALL_SIZE)
     # plot legend and set alpha
     pyplot.legend()
-    pyplot.legend().get_frame().set_alpha(0.5)
+    #pyplot.legend().get_frame().set_alpha(0.5)
     # save img
     pyplot.savefig('img/compare/' + 'comp_pol_' + str(polygon) + '.png', bbox_inches='tight')
     #pyplot.show()
@@ -238,15 +250,20 @@ def process(polygon):
 # run stuff
 from multiprocessing import Pool
 
-polygon_list = [6, 49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
 #will not work for some polys
 #df_polygons = pd.read_csv('data/2017_polygoninfo_filtered.csv', usecols=["ogr_fid"], nrows=None)
 #polygon_list = df_polygons.values.astype(int).flatten()
+polygon_list = 49
+polygon_list = [6, 49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
 autoARIMA = True
 
 if __name__ == '__main__':
-    pool = Pool()
-    results = pool.map(process, polygon_list)
+    if isinstance(polygon_list, int):
+        results = []
+        process(polygon_list)
+    else:
+        pool = Pool()
+        results = pool.map(process, polygon_list)
     df_results = pd.DataFrame.from_dict(results)
     df_results = df_results.set_index('pol')
     df_results.to_csv('results/2017_SMAPE.csv')
