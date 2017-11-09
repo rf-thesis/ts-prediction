@@ -73,7 +73,7 @@ def crossval_fbprophet(model, polygon):
 
 
 # calculate SMAPE (timeseries evaluation metric)
-def SMAPE(y_true, y_pred):
+def calc_SMAPE(y_true, y_pred):
     try:
         denominator = (np.abs(y_true) + np.abs(y_pred))
         diff = np.abs(y_true - y_pred) / denominator
@@ -93,7 +93,7 @@ def evaluate_cv_per_hour(df_cv, polygon):
         # define metrics & create score
         RMSE = np.sqrt(mean_squared_error(df_cv.y, df_cv.yhat))
         R2 = r2_score(df_cv.y, df_cv.yhat)
-        SMAPE = SMAPE(df_cv.y, df_cv.yhat)
+        SMAPE = calc_SMAPE(df_cv.y, df_cv.yhat)
         list_cvscore_per_hr.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'SMAPE': SMAPE})
         # plot
         plot_crossval(df_cv, polygon)
@@ -171,6 +171,6 @@ if __name__ == "__main__":
     results = pool.map(predict_one_polygon, polygon_list)
     # create a df of all dicts, join with polygon names
     df_results = pd.DataFrame.from_dict(results)
-    df_results = df_results.set_index('POLYGON')
-    df_results.to_csv('results/2017_fbprophet-cvresults.csv')
+    df_final = create_final_df(df_results)
+    df_final.to_csv('results/2017_fbprophet-cvresults.csv')
     print(df_results.tail(n=10))
