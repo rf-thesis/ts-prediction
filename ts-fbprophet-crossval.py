@@ -1,5 +1,6 @@
 from collections import defaultdict
 from itertools import chain
+from multiprocessing.pool import Pool
 
 import dateutil
 import numpy
@@ -132,25 +133,13 @@ def plot_crossval(df_cv, polygon):
         plt.close()
         plt.clf()
 
-# parallelise calculations
-from joblib import Parallel, delayed
-import multiprocessing
 
-
-def predict_one_polygon(df_orig, polygon):
+def predict_one_polygon(polygon):
+    df_orig = pd.read_csv(basepath + filename_data)
     model = create_model_fbprophet(df_orig, polygon)
     df_cv = crossval_fbprophet(model, polygon)
     cvscore_per_hr = evaluate_cv_per_hour(df_cv, polygon)
-    #df_cv.to_csv('so-data' + str(polygon) + '.csv')
     return cvscore_per_hr
-
-
-def parallelise(df_orig, list_polygons, allresults):
-    num_cores = multiprocessing.cpu_count()
-    # update the allresults list
-    # use [0] to flatten array
-    allresults.extend(
-        Parallel(n_jobs=num_cores)(delayed(predict_one_polygon)(df_orig, polygon) for polygon in list_polygons))
 
 
 def create_final_df(allresults):
@@ -170,15 +159,18 @@ def create_final_df(allresults):
 
 
 if __name__ == "__main__":
+    # todo: change
+    nrows = 5
+
     # load data
-    df_orig = pd.read_csv(basepath + filename_data)
-    df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)
-    list_polygons = df_polygons.values.flatten()
-    print(list_polygons)
+    df_polygons = pd.read_csv(basepath + filename_pols, nrows=nrows)
+    polygon_list = df_polygons.values.flatten()
+    print(polygon_list)
     # parallelise processing
-    allresults = Manager().list([])  # enable memory sharing between processes
-    parallelise(df_orig, list_polygons, allresults)
+    pool = Pool()
+    results = pool.map(predict_one_polygon, polygon_list)
     # create a df of all dicts, join with polygon names
-    df_final = create_final_df(allresults)
-    df_final.to_csv('results/2017_fbprophet-cvresults.csv')
-    print(df_final.tail(n=10))
+    df_results = pd.DataFrame.from_dict(results)
+    df_results = df_results.set_index('POLYGON')
+    df_results.to_csv('results/2017_fbprophet-cvresults.csv')
+    print(df_results.tail(n=10))

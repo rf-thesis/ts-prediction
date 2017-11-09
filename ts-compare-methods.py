@@ -227,9 +227,11 @@ polygon_list = 19
 autoARIMA = False
 
 if __name__ == '__main__':
+    # for debugging, provide only a single polygon (e.g. "polygon_list = 49")
     if isinstance(polygon_list, int):
         results = []
         process(polygon_list)
+    # otherwise multi-process the whole list
     else:
         pool = Pool()
         results = pool.map(process, polygon_list)
