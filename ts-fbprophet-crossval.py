@@ -1,9 +1,4 @@
-from collections import defaultdict
-from itertools import chain
-from multiprocessing.pool import Pool
-
 import dateutil
-import numpy
 from fbprophet import Prophet
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,7 +7,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 
 # setup forecast
-fc_hours_to_predict = 4  # how far forecast looks into future
+fc_hours_to_predict = 24  # how far forecast looks into future
 # setup cv
 run_cv = True  # run CV yes/no
 cv_horizon_amount = 24  # how far cv looks into future
@@ -20,7 +15,7 @@ cv_horizon_unit = 'hour'  # units: sec, minute, hour, day, week, month
 hr_range_arr = [32, 24, 16, 12, 8, 4, 2, 1]  # state model accuracy for these hours for RMSE, R^2, MAPE
 
 # setup data
-plotforecasts, plotcrossvals, plotcvuncertainty = False, True, True
+plotforecasts, plotcrossvals, plotcvuncertainty = False, False, False
 slices_per_hour = 4  # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')  # goes from 26-06 to 05-07
 enddate = dateutil.parser.parse('2017-07-02 12:00:00')
@@ -56,7 +51,7 @@ def plot_fbprophet(model, polygon):
     # plot
     if plotforecasts:
         model.plot(forecast)
-        plt.savefig('img/' + 'fc_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
+        plt.savefig('img/forecast/' + 'fc_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
         plt.close()
         plt.clf()
         print('plot created.')
@@ -72,15 +67,17 @@ def crossval_fbprophet(model, polygon):
     return df_cv
 
 
+# calculate MAPE (timeseries evaluation metric)
+def MAPE(y_true, y_pred):
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+
 # calculate SMAPE (timeseries evaluation metric)
 def calc_SMAPE(y_true, y_pred):
-    try:
-        denominator = (np.abs(y_true) + np.abs(y_pred))
-        diff = np.abs(y_true - y_pred) / denominator
-        diff[denominator == 0] = 0.0
-        return 200 * np.mean(diff)
-    except ValueError:
-        return 0
+    denominator = (np.abs(y_true) + np.abs(y_pred))
+    diff = np.abs(y_true - y_pred) / denominator
+    diff[denominator == 0] = 0.0
+    return 200 * np.mean(diff)
 
 
 def evaluate_cv_per_hour(df_cv, polygon):
@@ -95,11 +92,10 @@ def evaluate_cv_per_hour(df_cv, polygon):
         R2 = r2_score(df_cv.y, df_cv.yhat)
         SMAPE = calc_SMAPE(df_cv.y, df_cv.yhat)
         list_cvscore_per_hr.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'SMAPE': SMAPE})
-        # plot
-        plot_crossval(df_cv, polygon)
 
     return list_cvscore_per_hr
 
+# plot the crossvalidation results against the observed data (unused)
 def plot_crossval(df_cv, polygon):
     # set timestamp as index and convert to datetime
     df_plot = df_cv.set_index('ds')
@@ -118,8 +114,8 @@ def plot_crossval(df_cv, polygon):
         plt.clf()
     if plotcvuncertainty:
         fig = plt.figure(0)
-        df_plot.y.plot()
         df_plot.yhat.plot()
+        df_plot.y.plot()
         plt.fill_between(df_plot.index, df_plot.yhat_lower, df_plot.yhat_upper, interpolate=False, facecolor='b',
                          edgecolor='#1B2ACC', antialiased=True, alpha=.1)
         # plt.plot(df_plot.index, df_plot.y)
@@ -133,13 +129,25 @@ def plot_crossval(df_cv, polygon):
         plt.close()
         plt.clf()
 
+# parallelise calculations
+from joblib import Parallel, delayed
+import multiprocessing
 
-def predict_one_polygon(polygon):
-    df_orig = pd.read_csv(basepath + filename_data)
+
+def predict_one_polygon(df_orig, polygon):
     model = create_model_fbprophet(df_orig, polygon)
     df_cv = crossval_fbprophet(model, polygon)
     cvscore_per_hr = evaluate_cv_per_hour(df_cv, polygon)
+    #df_cv.to_csv('so-data' + str(polygon) + '.csv')
     return cvscore_per_hr
+
+
+def parallelise(df_orig, list_polygons, allresults):
+    num_cores = multiprocessing.cpu_count()
+    # update the allresults list
+    # use [0] to flatten array
+    allresults.extend(
+        Parallel(n_jobs=num_cores)(delayed(predict_one_polygon)(df_orig, polygon) for polygon in list_polygons))
 
 
 def create_final_df(allresults):
@@ -154,23 +162,22 @@ def create_final_df(allresults):
     df_pinfo = df_pinfo.set_index('ogr_fid')
     df_pinfo.index.rename('POLYGON', inplace=True)
     df_joined = df_endresult.join(df_pinfo, how='outer')
-    # todo: where HOUR > 0, cast to int
     return df_joined
 
 
 if __name__ == "__main__":
-    # todo: change
-    nrows = 5
+    # TODO: CHANGE TO 'None' AFTER DEBUGGING
+    nrows = None
 
     # load data
+    df_orig = pd.read_csv(basepath + filename_data)
     df_polygons = pd.read_csv(basepath + filename_pols, nrows=nrows)
-    polygon_list = df_polygons.values.flatten()
-    print(polygon_list)
+    list_polygons = df_polygons.values.flatten()
+    print(list_polygons)
     # parallelise processing
-    pool = Pool()
-    results = pool.map(predict_one_polygon, polygon_list)
+    allresults = Manager().list([])  # enable memory sharing between processes
+    parallelise(df_orig, list_polygons, allresults)
     # create a df of all dicts, join with polygon names
-    df_results = pd.DataFrame.from_dict(results)
-    df_final = create_final_df(df_results)
+    df_final = create_final_df(allresults)
     df_final.to_csv('results/2017_fbprophet-cvresults.csv')
-    print(df_results.tail(n=10))
+    print(df_final.head(n=10))
