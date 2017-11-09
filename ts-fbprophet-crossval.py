@@ -158,7 +158,7 @@ def create_final_df(allresults):
         df_endresult = df_endresult.append(one_row)
     df_endresult = df_endresult.set_index('POLYGON')
     # join with polygon names list
-    df_pinfo = pd.read_csv('data/2017_polygoninfo_wout1.csv', usecols=['ogr_fid', 'name'])
+    df_pinfo = pd.read_csv('data/2017_polygoninfo_wout1.csv', usecols=['ogr_fid', 'name', 'type'])
     df_pinfo = df_pinfo.set_index('ogr_fid')
     df_pinfo.index.rename('POLYGON', inplace=True)
     df_joined = df_endresult.join(df_pinfo, how='outer')
