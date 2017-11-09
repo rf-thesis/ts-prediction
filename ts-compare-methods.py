@@ -219,11 +219,12 @@ def process(polygon):
 
 # run stuff
 #will not work for some polys
-df_polygons = pd.read_csv('data/2017_polygoninfo_filtered.csv', usecols=["ogr_fid"], nrows=None)
-polygon_list = df_polygons.values.astype(int).flatten()
-print(polygon_list)
+#df_polygons = pd.read_csv('data/2017_polygoninfo_filtered.csv', usecols=["ogr_fid"], nrows=None)
+#polygon_list = df_polygons.values.astype(int).flatten()
+#print(polygon_list)
 #polygon_list = [6, 49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
-#autoARIMA = True
+polygon_list = 19
+autoARIMA = False
 
 if __name__ == '__main__':
     if isinstance(polygon_list, int):

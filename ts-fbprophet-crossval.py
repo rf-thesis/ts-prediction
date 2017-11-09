@@ -23,7 +23,7 @@ plotforecasts, plotcrossvals, plotcvuncertainty = False, True, True
 slices_per_hour = 4  # 15m = 4, 30m = 2, 60m = 1
 startdate = dateutil.parser.parse('2017-06-27 12:00:00')  # goes from 26-06 to 05-07
 enddate = dateutil.parser.parse('2017-07-02 12:00:00')
-filename_data = '2017_devicecount15m.csv'
+filename_data = '2017_dcount15m_harmonised.csv'
 filename_pols = '2017_polygonlist.csv'
 basepath = 'data/'
 
@@ -71,15 +71,35 @@ def crossval_fbprophet(model, polygon):
     return df_cv
 
 
-# calculate MAPE (timeseries evaluation metric)
-def mean_absolute_percentage_error(y_true, y_pred):
-    y_true, y_pred = np.array(y_true), np.array(y_pred)
-    return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
+# calculate SMAPE (timeseries evaluation metric)
+def SMAPE(y_true, y_pred):
+    try:
+        denominator = (np.abs(y_true) + np.abs(y_pred))
+        diff = np.abs(y_true - y_pred) / denominator
+        diff[denominator == 0] = 0.0
+        return 200 * np.mean(diff)
+    except ValueError:
+        return 0
 
 
 def evaluate_cv_per_hour(df_cv, polygon):
     list_cvscore_per_hr = []
-    # plot
+
+    # report scores for each hour range
+    for hr_range in hr_range_arr:
+        # cut data for each hour range
+        df_cv = df_cv.iloc[0:hr_range * slices_per_hour]
+        # define metrics & create score
+        RMSE = np.sqrt(mean_squared_error(df_cv.y, df_cv.yhat))
+        R2 = r2_score(df_cv.y, df_cv.yhat)
+        SMAPE = SMAPE(df_cv.y, df_cv.yhat)
+        list_cvscore_per_hr.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'SMAPE': SMAPE})
+        # plot
+        plot_crossval(df_cv, polygon)
+
+    return list_cvscore_per_hr
+
+def plot_crossval(df_cv, polygon):
     # set timestamp as index and convert to datetime
     df_plot = df_cv.set_index('ds')
     df_plot.index = pd.to_datetime(df_plot.index, infer_datetime_format=True)
@@ -97,10 +117,10 @@ def evaluate_cv_per_hour(df_cv, polygon):
         plt.clf()
     if plotcvuncertainty:
         fig = plt.figure(0)
+        df_plot.y.plot()
         df_plot.yhat.plot()
         plt.fill_between(df_plot.index, df_plot.yhat_lower, df_plot.yhat_upper, interpolate=False, facecolor='b',
                          edgecolor='#1B2ACC', antialiased=True, alpha=.1)
-        df_plot.y.plot()
         # plt.plot(df_plot.index, df_plot.y)
         # plt.plot(df_plot.index, df_plot.yhat)
         # plt.errorbar(df_plot.index, df_plot.yhat, yerr=[y-df_plot.yhat_upper, y-df_plot.yhat_lower], uplims=True, lolims=True)
@@ -111,19 +131,6 @@ def evaluate_cv_per_hour(df_cv, polygon):
         plt.savefig('img/' + 'cv_uc_' + filename_data + '_pol' + str(polygon) + '.png', bbox_inches='tight')
         plt.close()
         plt.clf()
-
-    # report scores for each hour range
-    for hr_range in hr_range_arr:
-        # cut data for each hour range
-        df_cv = df_cv.iloc[0:hr_range * slices_per_hour]
-        # define metrics & create score
-        RMSE = np.sqrt(mean_squared_error(df_cv.y, df_cv.yhat))
-        R2 = r2_score(df_cv.y, df_cv.yhat)
-        MAPE = mean_absolute_percentage_error(df_cv.y, df_cv.yhat)
-        list_cvscore_per_hr.append({'POLYGON': polygon, 'HOUR': hr_range, 'RSQUARED': R2, 'RMSE': RMSE, 'MAPE': MAPE})
-
-    return list_cvscore_per_hr
-
 
 # parallelise calculations
 from joblib import Parallel, delayed
@@ -167,10 +174,11 @@ if __name__ == "__main__":
     df_orig = pd.read_csv(basepath + filename_data)
     df_polygons = pd.read_csv(basepath + filename_pols, nrows=None)
     list_polygons = df_polygons.values.flatten()
+    print(list_polygons)
     # parallelise processing
     allresults = Manager().list([])  # enable memory sharing between processes
     parallelise(df_orig, list_polygons, allresults)
     # create a df of all dicts, join with polygon names
     df_final = create_final_df(allresults)
-    df_final.to_csv('results.csv')
+    df_final.to_csv('results/2017_fbprophet-cvresults.csv')
     print(df_final.tail(n=10))
