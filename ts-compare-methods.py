@@ -168,7 +168,7 @@ def process(polygon):
     print("Predicting polygon %s - started at %s" % (str(polygon), str(datetime.now())))
     series_all, series_train, series_test, df_all = load_transform_data(polygon)
     # output size (must be up here)
-    pyplot.figure(figsize=(6, 4))
+    pyplot.figure(figsize=(9, 6))
 
     # calculate all models
     # calc fbprophet
@@ -196,7 +196,7 @@ def process(polygon):
     pyplot.tick_params(axis='both', which='minor', labelsize=SMALL_SIZE)
     pyplot.axes.labelsize = SMALL_SIZE
     # plot description
-    pyplot.xlabel('')
+    pyplot.xlabel('# of devices')
     pyplot.ylabel('')
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict), fontsize=SMALL_SIZE)
     # plot legend and set alpha
@@ -221,7 +221,7 @@ def process(polygon):
 #df_polygons = pd.read_csv('data/2017_polygoninfo_filtered.csv', usecols=["ogr_fid"], nrows=None)
 #polygon_list = df_polygons.values.astype(int).flatten()
 #print(polygon_list)
-polygon_list = [6, 49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
+polygon_list = [49, 18, 5, 25, 11, 16, 10]  # Inner Area, Orange, Rising, Camping C + E, Bridge, Tradezone, Street City
 autoARIMA = True
 
 if __name__ == '__main__':
