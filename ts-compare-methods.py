@@ -190,13 +190,13 @@ def process(polygon):
 
     # format plot (http://matplotlib.org/users/customizing.html)
     # font size
-    SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE = 6, 8, 10
-    pyplot.rc('legend', fontsize='xx-small', loc='upper left')  # legend fontsize
+    SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE = 10, 12, 14
+    pyplot.rc('legend', fontsize='medium', loc='upper left')  # legend fontsize
     pyplot.tick_params(axis='both', which='major', labelsize=SMALL_SIZE)
     pyplot.tick_params(axis='both', which='minor', labelsize=SMALL_SIZE)
     pyplot.axes.labelsize = SMALL_SIZE
     # plot description
-    pyplot.xlabel('# of devices')
+    pyplot.xlabel('')
     pyplot.ylabel('')
     pyplot.title('%s (%iH forecast)' % (getname(polygon), hours_to_predict), fontsize=SMALL_SIZE)
     # plot legend and set alpha
